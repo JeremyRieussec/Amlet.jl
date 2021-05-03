@@ -1,4 +1,4 @@
-function Sofia.F(x::AbstractVector{T}, mo::LogitModel{Updatable, D}; sample = 1:length(mo.data), update::Bool = false) where {T, D}
+function Sofia.F(x::Vector{T}, mo::LogitModel{Updatable, D}; sample = 1:length(mo.data), update::Bool = false) where {T, D}
     update && (update!(mo.se, x, sample, mo) ; return zero(T))
     @assert mo.se.x == x "storage engine not up to date"
     ac = zero(T)
@@ -12,7 +12,7 @@ function Sofia.F(x::AbstractVector{T}, mo::LogitModel{Updatable, D}; sample = 1:
     return -ac/nind
 end
 
-function Sofia.grad!(x::AbstractVector{T}, mo::LogitModel{Updatable, D}, ac::Array{T, 1}; sample = 1:length(mo.data)) where {T, D}
+function Sofia.grad!(x::Vector{T}, mo::LogitModel{Updatable, D}, ac::Array{T, 1}; sample = 1:length(mo.data)) where {T, D}
     @assert mo.se.x == x "storage engine not up to date"
     ac[:] .= zero(T)
     nind = 0
@@ -26,7 +26,7 @@ function Sofia.grad!(x::AbstractVector{T}, mo::LogitModel{Updatable, D}, ac::Arr
     return ac
 end
 
-function Sofia.H!(x::AbstractVector{T}, mo::LogitModel{Updatable, D}, ac::Array{T, 2}; sample = 1:length(mo.data)) where {T, D}
+function Sofia.H!(x::Vector{T}, mo::LogitModel{Updatable, D}, ac::Array{T, 2}; sample = 1:length(mo.data)) where {T, D}
     @assert mo.se.x == x "storage engine not up to date"
     ac[:, :] .= zero(T)
     nind = 0
@@ -40,7 +40,7 @@ function Sofia.H!(x::AbstractVector{T}, mo::LogitModel{Updatable, D}, ac::Array{
     return ac
 end
 
-function Sofia.Hdotv!(x::AbstractVector{T}, mo::LogitModel{Updatable, D}, v::AbstractVector, ac::Array{T, 1}; 
+function Sofia.Hdotv!(x::Vector{T}, mo::LogitModel{Updatable, D}, v::Vector, ac::Array{T, 1}; 
         sample = 1:length(mo.data)) where {T, D}
     @assert mo.se.x == x "storage engine not up to date"
     ac[:] .= zero(T)
@@ -58,7 +58,7 @@ end
 
 
 
-function Sofia.BHHH!(x::AbstractVector{T}, mo::LogitModel{Updatable, D}, ac::Array{T, 2}; sample = 1:length(mo.data)) where {T, D}
+function Sofia.BHHH!(x::Vector{T}, mo::LogitModel{Updatable, D}, ac::Array{T, 2}; sample = 1:length(mo.data)) where {T, D}
     @assert mo.se.x == x "storage engine not up to date"
     dim = length(x)
     ac[:, :] .= zero(T)
@@ -74,7 +74,7 @@ function Sofia.BHHH!(x::AbstractVector{T}, mo::LogitModel{Updatable, D}, ac::Arr
     return ac
 end
 
-function Sofia.BHHHdotv!(x::AbstractVector{T}, mo::LogitModel{Updatable, D}, v::Vector, ac::Array{T, 1}; sample = 1:length(mo.data)) where {T, D}
+function Sofia.BHHHdotv!(x::Vector{T}, mo::LogitModel{Updatable, D}, v::Vector, ac::Array{T, 1}; sample = 1:length(mo.data)) where {T, D}
     @assert mo.se.x == x "storage engine not up to date"
     dim = length(x)
     ac[:] = zero(T)
@@ -90,7 +90,7 @@ function Sofia.BHHHdotv!(x::AbstractVector{T}, mo::LogitModel{Updatable, D}, v::
     return ac
 end
 
-function Sofia.Fs(x::AbstractVector{T}, mo::LogitModel{Updatable, D}; sample = 1:length(mo.data)) where {T, D}
+function Sofia.Fs(x::Vector{T}, mo::LogitModel{Updatable, D}; sample = 1:length(mo.data)) where {T, D}
     @assert mo.se.x == x "storage engine not up to date"
     ac = Array{T, 1}(undef, length(sample))
     #weig = Array{Int, 1}(undef, length(sample))
@@ -103,7 +103,7 @@ function Sofia.Fs(x::AbstractVector{T}, mo::LogitModel{Updatable, D}; sample = 1
     return -ac#, weig
 end
 
-function Sofia.grads!(x::AbstractVector{T}, mo::LogitModel{Updatable, D}, ac::AbstractArray{T, 2}; sample = 1:length(mo.data)) where {T, D}
+function Sofia.grads!(x::Vector{T}, mo::LogitModel{Updatable, D}, ac::AbstractArray{T, 2}; sample = 1:length(mo.data)) where {T, D}
     @assert mo.se.x == x "storage engine not up to date"
     for (index, i) in enumerate(sample)
         ns = nsim(mo.data[i])
