@@ -1,9 +1,9 @@
 """
-Another Machine Learning Estimation Tool (`AMLET`). 
+Another Machine Learning Estimation Tool (`AMLET`).
 """
 module Amlet
 
-using Distributions, ForwardDiff, LinearAlgebra, RDST, Random, Statistics, Sofia
+using Distributions, ForwardDiff, LinearAlgebra, RDST, Random, Statistics, Sofia, OnlineStats
 
 import Base.getindex
 import Base.iterate
