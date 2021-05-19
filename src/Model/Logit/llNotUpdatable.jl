@@ -1,41 +1,36 @@
 
-function Sofia.F(x::Vector{T}, mo::LogitModel{NotUpdatable, D}; sample = 1:length(mo.data)) where {T, D}
-    ac = zero(T)
-    nind = 0
-    for i in sample
-        ns = nsim(mo.data[i])
-        ac += ns*loglogit(x, mo.data[i], mo.u, computePrecomputedVal(x, mo.data[i], mo.u))
-        nind += ns
-    end
-    return -ac/nind
-end
-
-<<<<<<< HEAD
-
-# true var
-# function Sofia.F(x::AbstractVector{T}, mo::LogitModel{NotUpdatable, D}; sample = 1:length(mo.data)) where {T, D}
-#     #ac = zero(T)
-#     #nind = 0
-#     stats_data = Series(Mean(), Variance())
-#     f_values = T[]
+# function Sofia.F(x::Vector{T}, mo::LogitModel{NotUpdatable, D}; sample = 1:length(mo.data)) where {T, D}
+#     ac = zero(T)
+#     nind = 0
 #     for i in sample
 #         ns = nsim(mo.data[i])
-#         val = -loglogit(x, mo.data[i], mo.u, computePrecomputedVal(x, mo.data[i], mo.u))
-#         fit!(stats_data, ones(ns)*val)
-#         #ac += ns*loglogit(x, mo.data[i], mo.u, computePrecomputedVal(x, mo.data[i], mo.u))
-#         #nind += ns
-#         push!(f_values, val)
+#         ac += ns*loglogit(x, mo.data[i], mo.u, computePrecomputedVal(x, mo.data[i], mo.u))
+#         nind += ns
 #     end
-#     value_f , var_f = OnlineStats.value(stats_data)
-#     return value_f , var_f, f_values
+#     return -ac/nind
 # end
+
+# true var
+function Sofia.F(x::AbstractVector{T}, mo::LogitModel{NotUpdatable, D}; sample = 1:length(mo.data)) where {T, D}
+    #ac = zero(T)
+    #nind = 0
+    stats_data = Series(Mean(), Variance())
+    f_values = T[]
+    for i in sample
+        ns = nsim(mo.data[i])
+        val = -loglogit(x, mo.data[i], mo.u, computePrecomputedVal(x, mo.data[i], mo.u))
+        fit!(stats_data, ones(ns)*val)
+        #ac += ns*loglogit(x, mo.data[i], mo.u, computePrecomputedVal(x, mo.data[i], mo.u))
+        #nind += ns
+        push!(f_values, val)
+    end
+    value_f , var_f = OnlineStats.value(stats_data)
+    return value_f , var_f, f_values
+end
 
 
 
 function Sofia.grad!(x::AbstractVector{T}, mo::LogitModel{NotUpdatable, D}, ac::Array{T, 1}; sample = 1:length(mo.data)) where {T, D}
-=======
-function Sofia.grad!(x::Vector{T}, mo::LogitModel{NotUpdatable, D}, ac::Array{T, 1}; sample = 1:length(mo.data)) where {T, D}
->>>>>>> 31cb4407a07ecd6f50d3dcaa6fbd70cf94d5f7fc
     ac[:] .= zero(T)
     nind = 0
     for i in sample
@@ -59,12 +54,8 @@ function Sofia.H!(x::Vector{T}, mo::LogitModel{NotUpdatable, D}, ac::Array{T, 2}
     return ac
 end
 
-<<<<<<< HEAD
 function Sofia.Hdotv!(x::AbstractVector{T}, mo::LogitModel{NotUpdatable, D}, v::AbstractVector, ac::Array{T, 1};
-=======
-function Sofia.Hdotv!(x::Vector{T}, mo::LogitModel{NotUpdatable, D}, v::AbstractVector, ac::Array{T, 1}; 
->>>>>>> 31cb4407a07ecd6f50d3dcaa6fbd70cf94d5f7fc
-        sample = 1:length(mo.data)) where {T, D}
+                        sample = 1:length(mo.data)) where {T, D}
     ac[:] .= zero(T)
     nind = 0
     for i in sample
@@ -77,7 +68,7 @@ function Sofia.Hdotv!(x::Vector{T}, mo::LogitModel{NotUpdatable, D}, v::Abstract
 end
 
 function Sofia.Hdotv(x::AbstractVector{T}, mo::LogitModel{NotUpdatable, D}, v::AbstractVector;
-        sample = 1:length(mo.data)) where {T, D}
+                            sample = 1:length(mo.data)) where {T, D}
     ac = zeros(T, length(x))
     nind = 0
     for i in sample
