@@ -1,17 +1,17 @@
 
-# function Sofia.F(x::Vector{T}, mo::LogitModel{NotUpdatable, D}; sample = 1:length(mo.data)) where {T, D}
-#     ac = zero(T)
-#     nind = 0
-#     for i in sample
-#         ns = nsim(mo.data[i])
-#         ac += ns*loglogit(x, mo.data[i], mo.u, computePrecomputedVal(x, mo.data[i], mo.u))
-#         nind += ns
-#     end
-#     return -ac/nind
-# end
+function F_normal(x::Vector{T}, mo::LogitModel{NotUpdatable, D}; sample = 1:length(mo.data)) where {T, D}
+    ac = zero(T)
+    nind = 0
+    for i in sample
+        ns = nsim(mo.data[i])
+        ac += ns*loglogit(x, mo.data[i], mo.u, computePrecomputedVal(x, mo.data[i], mo.u))
+        nind += ns
+    end
+    return -ac/nind
+end
 
 # true var
-function Sofia.F(x::AbstractVector{T}, mo::LogitModel{NotUpdatable, D}; sample = 1:length(mo.data)) where {T, D}
+function F_variance(x::AbstractVector{T}, mo::LogitModel{NotUpdatable, D}; sample = 1:length(mo.data)) where {T, D}
     #ac = zero(T)
     #nind = 0
     stats_data = Series(Mean(), Variance())
@@ -141,5 +141,15 @@ function Sofia.grads!(x::Vector{T}, mo::LogitModel{NotUpdatable, D}, ac::Abstrac
         ac[:, index] = gradloglogit(x, mo.data[i], mo.u, computePrecomputedVal(x, mo.data[i], mo.u))
     end
     ac[:, :] .*= -1
+    return ac
+end
+
+function Sofia.grads(x::Vector{T}, mo::LogitModel{NotUpdatable, D}; sample = 1:length(mo.data)) where {T, D}
+    ac = Array{Vector{T}, 1}(undef, length(sample))
+    for (index, i) in enumerate(sample)
+        ns = nsim(mo.data[i])
+        ac[index] = gradloglogit(x, mo.data[i], mo.u, computePrecomputedVal(x, mo.data[i], mo.u))
+    end
+    ac[:] .*= -1
     return ac
 end

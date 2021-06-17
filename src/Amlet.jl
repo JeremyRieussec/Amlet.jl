@@ -11,7 +11,8 @@ import Base.length
 import Base.copy
 import Base.*
 
-export AbstractUtility, AbstractData, AbstractObs, computeUtilities
+export AbstractUtility, AbstractData, AbstractObs, computeUtilities,
+        F_normal, F_variance
 
 
 include("Utilities/main.jl")
