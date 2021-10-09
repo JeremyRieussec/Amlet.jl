@@ -1,6 +1,7 @@
 
 function Sofia.F(x::Vector{T}, mo::LogitModel{UPD, D}; 
-        sample = 1:length(mo.data)) where {T, UPD, D}
+        sample = 1:length(mo.data), update::Bool = false) where {T, UPD, D}
+    update && update!(mo.se, x, sampling, mo)
     ac = zero(T)
     nind = 0
     UPD == Updatable && @assert (mo.se.x == x && all(mo.se.updatedInd[sample])) "Storage Engine not updated" 
