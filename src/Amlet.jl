@@ -13,7 +13,7 @@ import Base.*
 
 export AbstractUtility, AbstractData, AbstractObs, computeUtilities,
         F, Fs, Fs!,
-        grad, grads, grads!,
+        grad, grad!, grads, grads!,
         H, H!, Hdotv, Hdotv!,
         BHHH, BHHH!, BHHHdotv, BHHHdotv!
 
