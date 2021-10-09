@@ -12,7 +12,10 @@ import Base.copy
 import Base.*
 
 export AbstractUtility, AbstractData, AbstractObs, computeUtilities,
-        F_normal, F_variance
+        F, Fs, Fs!,
+        grad, grads, grads!,
+        H, H!, Hdotv, Hdotv!,
+        BHHH, BHHH!, BHHHdotv, BHHHdotv!
 
 
 include("Utilities/main.jl")
