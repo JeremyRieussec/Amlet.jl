@@ -21,7 +21,7 @@ function Sofia.Fs!(x::Vector{T}, mo::LogitModel{UPD, D}, ac::Array{T, 1};
         ns = nsim(mo.data[i])
         cv = (UPD == NotUpdatable) ? computePrecomputedVal(x, mo.data[i], mo.u) : @view mo.se.cv[:, i]
         ll = loglogit(x, mo.data[i], mo.u, cv)
-        inplace ? ac[index] = ll : ac[i] = ll
+        inplace ? ac[i] = ll : ac[index] = ll
     end
     return -ac
 end
@@ -51,6 +51,7 @@ function Sofia.grad(x::Vector{T}, mo::LogitModel{UPD, D};
         sample = 1:length(mo.data)) where {T, UPD, D}
         ac = Array{T, 1}(undef, length(x))
         Sofia.grad(x, mo, ac, sample = sample)
+        return ac
 end
 
 function Sofia.grads!(x::Vector{T}, mo::LogitModel{UPD, D}, ac::AbstractArray{T, 2}; 
@@ -60,7 +61,7 @@ function Sofia.grads!(x::Vector{T}, mo::LogitModel{UPD, D}, ac::AbstractArray{T,
         ns = nsim(mo.data[i])
         cv = (UPD == NotUpdatable) ? computePrecomputedVal(x, mo.data[i], mo.u) : @view mo.se.cv[:, i]
         gll = gradloglogit(x, mo.data[i], mo.u, cv)
-        inplace ? ac[:, index] = gll : ac[:, i] = gll
+        inplace ? ac[:, i] = gll : ac[:, index] = gll
     end
     ac[:, :] .*= -1
     return ac
