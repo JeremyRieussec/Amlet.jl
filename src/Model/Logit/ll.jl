@@ -1,10 +1,10 @@
 
 function Sofia.F(x::Vector{T}, mo::LogitModel{UPD, D}; 
         sample = 1:length(mo.data), update::Bool = false) where {T, UPD, D}
-    update && update!(mo.se, x, sampling, mo)
+    update && update!(mo.se, x, sample, mo)
     ac = zero(T)
     nind = 0
-    UPD == Updatable && @assert (mo.se.x == x && all(mo.se.updatedInd[sample])) "Storage Engine not updated" 
+    UPD == Updatable && @assert ((mo.se.x == x) && all(mo.se.updatedInd[sample])) "Storage Engine not updated" 
     for i in sample
         ns = nsim(mo.data[i])
         cv = (UPD == NotUpdatable) ? computePrecomputedVal(x, mo.data[i], mo.u) : @view mo.se.cv[:, i]
