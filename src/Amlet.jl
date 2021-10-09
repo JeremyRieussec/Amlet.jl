@@ -3,7 +3,7 @@ Another Machine Learning Estimation Tool (`AMLET`).
 """
 module Amlet
 
-using Distributions, ForwardDiff, LinearAlgebra, RDST, Random, Statistics, Sofia
+using Distributions, ForwardDiff, LinearAlgebra, RDST, Random, Sofia
 
 import Base.getindex
 import Base.iterate
