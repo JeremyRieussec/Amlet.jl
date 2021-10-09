@@ -96,7 +96,7 @@ function Sofia.Hdotv!(x::AbstractVector{T}, mo::LogitModel{UPD, D}, v::AbstractV
     for i in sample
         ns = nsim(mo.data[i])
         cv = (UPD == NotUpdatable) ? computePrecomputedVal(x, mo.data[i], mo.u) : @view mo.se.cv[:, i]
-        ac[:] += ns*Hessianloglogit_dot_v(x, mo.data[i], mo.u, cv), v)
+        ac[:] += ns*Hessianloglogit_dot_v(x, mo.data[i], mo.u, cv, v)
         nind += ns
     end
     ac[:] ./= -nind
