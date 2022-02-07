@@ -1,3 +1,17 @@
+"""
+    LogitUtility{L <: isLinear}
+
+# Fields
+- `u::Function` is the utility function for Logit model
+- `grad::Function` is the gradient function
+    - x::Any
+    - beta::AbstractVector
+    - i::Int
+- `H::Function` is Hessian matrix computation function
+    - x::Any
+    - beta::AbstractVector
+    - i::Int
+"""
 struct LogitUtility{L <: isLinear} <: AbstractUtility{L}
     u::Function
     grad::Function
@@ -7,7 +21,7 @@ struct LogitUtility{L <: isLinear} <: AbstractUtility{L}
             return ForwardDiff.gradient(t -> u(x, t, i), beta)
         end
         function H(x::Any, beta, i::Int)
-            return ForwardDiff.hessian(t -> u(x, t, i), x)
+            return ForwardDiff.hessian(t -> u(x, t, i), beta)
         end
         return new{L}(u, grad, H)
     end
@@ -16,7 +30,12 @@ struct LogitUtility{L <: isLinear} <: AbstractUtility{L}
     end
 end
 
+
+"""
+Encapsulate code for utility, gradient and Hessian computation.
+"""
 module LinearUtilityForLogitModelWithCodeWellEncapsulated
+
 using LinearAlgebra
     #AbstractVector
     function access(n::Int, m::Int)
@@ -28,8 +47,8 @@ using LinearAlgebra
     function grad(x::AbstractVector, beta::AbstractVector, i::Int)
         return x[access(length(beta), i)]
     end
-    function H(x::AbstractVector, beta::AbstractVector, i::Int)
-        return Array{Float64, 2}(I, length(beta), length(beta))
+    function H(x::AbstractVector, beta::AbstractVector{T}, i::Int) where T
+        return zeros(T, length(beta), length(beta))
     end
 
     #AbstractMatrix
@@ -39,10 +58,10 @@ using LinearAlgebra
     function grad(x::AbstractMatrix, beta::AbstractVector, i::Int)
         return x[i, :]
     end
-    function H(x::AbstractMatrix, beta::AbstractVector, i::Int)
-        return Array{Float64, 2}(I, length(beta), length(beta))
+    function H(x::AbstractMatrix, beta::AbstractVector{T}, i::Int) where T
+        return zeros(T, length(beta), length(beta)) 
     end
 end
+
 LUFLMWCWE = LinearUtilityForLogitModelWithCodeWellEncapsulated
 LinUti = LogitUtility(LUFLMWCWE.u, LUFLMWCWE.grad, LUFLMWCWE.H, Linear)
-

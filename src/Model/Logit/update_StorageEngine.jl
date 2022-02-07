@@ -1,8 +1,9 @@
-function update!(se::StorageEngine{T}, x::AbstractVector{T}, sampling::AbstractVector{Int}, mo::LogitModel) where T
+
+function update!(se::StorageEngine{T}, beta::AbstractVector{T}, sampling::AbstractVector{Int}, mo::LogitModel) where T
     #if we are at a new point, all computed values are wrong
     toupdate = falses(length(se.updatedInd))
-    if se.x != x
-        se.x[:] = x
+    if se.beta != beta
+        se.beta[:] = beta
         se.updatedInd[:] .= false
         toupdate[sampling] .= true
     #if we are at the same point as in the storage engine but some observation in the sample are not already updated
@@ -16,7 +17,7 @@ function update!(se::StorageEngine{T}, x::AbstractVector{T}, sampling::AbstractV
     #toupdateasInt contains the indexes of observation to update, isa vector of Int
     toupdateasInt = findall(toupdate)
     for i in toupdateasInt
-        se.cv[:, i] = computePrecomputedVal(x, mo.data[i], mo.u)
+        se.cv[:, i] = computePrecomputedVal(beta, mo.data[i], mo.u)
     end
     #tell the storage engine which observations are up to date
     se.updatedInd[sampling] .= true

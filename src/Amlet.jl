@@ -1,5 +1,17 @@
 """
 Another Machine Learning Estimation Tool (`AMLET`).
+
+A few steps to folow:
+- create data structure and utility function
+- create LogitModel
+Then, you will have access to the functions: F, Fs, Fs!,
+grad, grad!, grads, grads!,
+H, H!, Hdotv, Hdotv!,
+BHHH, BHHH!, BHHHdotv, BHHHdotv!.
+
+For further details see: https://github.com/JeremyRieussec/Amlet.jl/docs/build
+
+Good luck!!
 """
 module Amlet
 

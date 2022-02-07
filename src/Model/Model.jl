@@ -1,3 +1,11 @@
+"""
+     LogitModel
+
+## Fields
+- `u::AbstractUtility`
+- `data::D`
+- `se::StorageEngine`
+"""
 mutable struct LogitModel{U<:IsUpdatable, D <: AbstractData} <: AmletModel{U, D}
     u::AbstractUtility
     data::D
@@ -32,13 +40,12 @@ mutable struct MixedLogitModel{U<:IsUpdatable, D <: AbstractData} <: AmletModel{
             push!(seeds, copy(rng.Bg))
             next_substream!(rng)
         end
-            
+
         return new{NotUpdatable, D}(u, data, seeds, R)
     end
     function MixedLogitModel(u::MixedLogitUtility, data::D, seed0::Array{Int, 1}, R = 100) where {D <: AbstractData}
         rng = MRG32k3a(seed0)
-        return MixedLogit{NotUpdatable, D}(u, data, rng0, R) 
+        return MixedLogit{NotUpdatable, D}(u, data, rng0, R)
     end
 end
 copy(a::AmletModel) = typeof(a)([getfield(a, f) for f in fieldnames(typeof(a))]...)
-
