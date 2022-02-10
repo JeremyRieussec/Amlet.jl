@@ -123,7 +123,7 @@ end
 - `inplace::Bool = true`
 """
 function Sofia.grads!(beta::Vector{T}, mo::LogitModel{UPD, D}, ac::AbstractArray{T, 2};
-        sample = 1:length(mo.data), inplace::Bool = true) where {T, UPD, D}
+        sample = 1:length(mo.data), inplace::Bool = false) where {T, UPD, D}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     for (index, i) in enumerate(sample)
         # ns = nsim(mo.data[i])
