@@ -1,3 +1,5 @@
+abstract type AbstractStorageEngine{T} end
+
 """
      StorageEngine{T}
 
@@ -9,7 +11,7 @@
 ## Constructor(s)
 - StorageEngine(data::AbstractData, T::Type = Float64)
 """
-struct StorageEngine{T}
+struct StorageEngine{T} <: AbstractStorageEngine{T}
     beta::Vector{T} # parameter vector
     cv::Matrix{T} # probability matrix
     updatedInd::BitArray{1} # array to identify which individual have been used or not
