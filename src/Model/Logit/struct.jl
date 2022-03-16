@@ -6,25 +6,25 @@
 - `data::D`
 - `se::StorageEngine`
 """
-mutable struct LogitModel{U<:IsUpdatable, D <: AbstractData} <: AmletModel{U, D}
-    u::AbstractUtility
+mutable struct LogitModel{U, D <: AbstractData, L, UTI <: AbstractLogitUtility{L}} <: AmletModel{U, D}
     data::D
     se::StorageEngine
-    function LogitModel(u::LogitUtility, data::D; T::Type = Float64, upd::Bool = false) where {D <: AbstractData}
+    meta::NLPModelMeta{Float64, Vector{Float64}}
+    counters::Counters
+    function LogitModel{UTI}(data::D; T::Type = Float64, upd::Bool = false) where {D <: AbstractData, L, UTI <: AbstractLogitUtility{L}}
         UPD = upd ? Updatable : NotUpdatable
-        upd && return new{UPD, D}(u, data, StorageEngine(data, T))
-        return new{UPD, D}(u, data)
+        model = upd ? new{UPD, D, L, UTI}(data, StorageEngine(data, T)) : new{UPD, D, L, UTI}(data)
+        model.meta = NLPModelMeta(dim(data))
+        model.counters = Counters()
+        return model
     end
-    function LogitModel(data::D; upd::Bool = false) where {D <: AbstractData}
+    function LogitModel(data::D; T::Type = Float64, upd::Bool = false) where {D <: AbstractData}
+        UTI = StandardLogitUtility
+        L = Linear
         UPD = upd ? Updatable : NotUpdatable
-        T = Float64
-        upd && return new{UPD, D}(LinUti, data, StorageEngine(data, T))
-        return new{UPD, D}(LinUti, data)
-    end
-    function LogitModel{isUPD}(data::D) where {D <: AbstractData, isUPD <: IsUpdatable}
-        T = Float64
-        upd = (isUPD == Updatable)
-        upd && return new{isUPD, D}(LinUti, data, StorageEngine(data, T))
-        return new{isUPD, D}(LinUti, data)
+        model = upd ? new{UPD, D, L, UTI}(data, StorageEngine(data, T)) : new{UPD, D, L, UTI}(u, data)
+        model.meta = NLPModelMeta(dim(data))
+        model.counters = Counters()
+        return model
     end
 end

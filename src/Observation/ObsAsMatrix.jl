@@ -27,10 +27,10 @@ end
 
 Computes utility value for every alternative in a Logit context -> returns an array.
 """
-function computeUtilities(x::Vector, obs::ObsAsMatrix, u::LogitUtility)
+function computeUtilities(x::Vector, obs::ObsAsMatrix, u::AbstractLogitUtility)
     return [u.u(obs.data, x, i) for i in 1:nalt(obs)]
 end
-
+#=
 """
     computeUtilities(x::Vector, obs::ObsAsMatrix, u::MixedLogitUtility, gamma::Vector)
 
@@ -39,7 +39,7 @@ Computes utility value for every alternative in a MixedLogit context -> returns 
 function computeUtilities(x::Vector, obs::ObsAsMatrix, u::MixedLogitUtility, gamma::Vector)
     return [u.u(obs_i, x, gamma) for obs_i in eachrow(obs.data)]
 end
-
+=#
 """
     choice(obs::ObsAsMatrix)
 

@@ -7,4 +7,4 @@ abstract type AbstractPanelObs <: AbstractObs end
 
 include("ObsAsMatrix.jl")
 include("ObsAsVector.jl")
-include("PanelObs.jl")
+#include("PanelObs.jl")

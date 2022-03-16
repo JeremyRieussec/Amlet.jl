@@ -1,14 +1,8 @@
-abstract type isLinear end
-struct Linear <: isLinear end
-struct NotLinear <: isLinear end
+@enum isLinear Linear NotLinear
 
-function access(n::Int, m::Int)
-    return (m-1)*n+1:n*m
-end
-
-abstract type AbstractUtility{T<: isLinear} end
+abstract type AbstractUtility{isl} end
 
 
 include("LogitUtility.jl")
 
-include("MixedLogitUtility.jl")
+#include("MixedLogitUtility.jl")

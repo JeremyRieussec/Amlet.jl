@@ -1,4 +1,4 @@
-mutable struct MixedLogitModel{U<:IsUpdatable, D <: AbstractData} <: AmletModel{U, D}
+mutable struct MixedLogitModel{U, D <: AbstractData} <: AmletModel{U, D}
     u::AbstractUtility
     data::D
     seeds::Array{Array{Int, 1}, 1}

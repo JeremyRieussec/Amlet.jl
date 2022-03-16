@@ -15,7 +15,7 @@ Good luck!!
 """
 module Amlet
 
-using Distributions, ForwardDiff, LinearAlgebra, RDST, Random, NLPModels
+using ForwardDiff, LinearAlgebra, RDST, Random, NLPModels#, Distributions
 
 import Base.getindex
 import Base.iterate
