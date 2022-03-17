@@ -108,7 +108,7 @@ end
 function Sofia.grad(beta::Vector{T}, mo::LogitModel{UPD, D};
         sample = 1:length(mo.data)) where {T, UPD, D}
         ac = Array{T, 1}(undef, length(beta))
-        Sofia.grad(beta, mo, ac, sample = sample)
+        Sofia.grad!(beta, mo, ac, sample = sample)
         return ac
 end
 
