@@ -7,12 +7,15 @@ choice made by the observation are the first ones.
 - `nalt::Int` : number of alternatives faced by individual.
 - `nsim::Int` : number of similar individuals in this configuration.
 """
-struct ObsAsVector <: AbstractObs
-    data::AbstractVector
+struct ObsAsVector{V} <: AbstractObs
+    data::V
     nalt::Int
     nsim::Int
-    function ObsAsVector(data::AbstractVector, nalt::Int, nsim::Int = 1)
-        return new(data, nalt, nsim)
+    function ObsAsVector(data::V, nalt::Int, nsim::Int = 1) where V
+        return new{V}(data, nalt, nsim)
+    end
+    function ObsAsVector{V}(data::V, nalt::Int, nsim::Int = 1) where V
+        return new{V}(data, nalt, nsim)
     end
 end
 
@@ -24,16 +27,11 @@ Returns the number of alternatives faced by individual.
 function nalt(obs::ObsAsVector)
     return obs.nalt
 end
-
-
-"""
-    computeUtilities(x::Vector, obs::ObsAsVector, u::LogitUtility)
-
-Computes utility value for every alternative in a Logit context -> returns an array.
-"""
-function computeUtilities(beta::AbstractArray{T}, obs::ObsAsVector, ::Type{UTI}) where {T, UTI <: AbstractLogitUtility}
-    return T[u(UTI, obs.data, beta, i) for i in 1:nalt(obs)]
+function dim(obs::ObsAsVector)
+    return div(length(obs.data), nalt(obs))
 end
+
+
 #=
 """
     computeUtilities(x::Vector, obs::ObsAsMatrix, u::MixedLogitUtility, gamma::Vector)
@@ -67,4 +65,17 @@ Returns number of similar individuals with these observations.
 """
 function nsim(obs::ObsAsVector)
     return obs.nsim
+end
+function access(n::Int, m::Int)
+    return (m-1)*n+1:n*m
+end
+function explanatory(obs::ObsAsVector, i::Int)
+    data = obs.data
+    n = dim(obs)
+    @view data[access(n, i)]
+
+end
+function explanatorylength(l::ObsAsVector)
+    n = length(l.data)
+    return div(n, l.nalt)
 end

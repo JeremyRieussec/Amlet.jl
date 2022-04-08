@@ -14,7 +14,8 @@ mutable struct LogitModel{U, D <: AbstractData, L, UTI <: AbstractLogitUtility{L
     function LogitModel{UTI}(data::D; T::Type = Float64, upd::Bool = false) where {D <: AbstractData, L, UTI <: AbstractLogitUtility{L}}
         UPD = upd ? Updatable : NotUpdatable
         model = upd ? new{UPD, D, L, UTI}(data, StorageEngine(data, T)) : new{UPD, D, L, UTI}(data)
-        model.meta = NLPModelMeta(dim(data))
+        n = dim(UTI, data)
+        model.meta = NLPModelMeta(n)
         model.counters = Counters()
         return model
     end
@@ -23,7 +24,8 @@ mutable struct LogitModel{U, D <: AbstractData, L, UTI <: AbstractLogitUtility{L
         L = Linear
         UPD = upd ? Updatable : NotUpdatable
         model = upd ? new{UPD, D, L, UTI}(data, StorageEngine(data, T)) : new{UPD, D, L, UTI}(u, data)
-        model.meta = NLPModelMeta(dim(data))
+        n = dim(UTI, data)
+        model.meta = NLPModelMeta(n)
         model.counters = Counters()
         return model
     end

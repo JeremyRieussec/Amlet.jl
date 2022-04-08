@@ -7,4 +7,4 @@ end
 
 include("Logit/main.jl")
 
-#include("MixedLogit/main.jl")
+include("MixedLogit/main.jl")

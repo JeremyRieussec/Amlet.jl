@@ -18,8 +18,8 @@ function NLPModels.obj(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
     UPD == Updatable && @assert ((mo.se.beta == beta) && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     for i in sample
         ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
-        ac += ns*logit(beta, mo.data[i], UTI, cv)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        ac += ns*logit(UTI, mo.data[i], beta, precomputedValues = cv)
         nind += ns
     end
     return -ac/nind
@@ -45,7 +45,7 @@ function objs!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 1};
     for (index, i) in enumerate(sample)
         # ns = nsim(mo.data[i])
         cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
-        ll = logit(beta, mo.data[i], UTI, cv)
+        ll = logit(UTI, mo.data[i], beta, precomputedValues = cv)
         inplace ? ac[i] = -ll : ac[index] = -ll
     end
     return ac
@@ -66,7 +66,7 @@ Returns an array comtaining all values.
 function objs(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
         sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
     ac = Array{T, 1}(undef, length(sample))
-    Fs!(mo, beta, ac; sample = sample, inplace = false)
+    objs!(mo, beta, ac; sample = sample, inplace = false)
     return ac
 end
 
@@ -86,8 +86,8 @@ function NLPModels.grad!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Ar
     nind = 0
     for i in sample
         ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
-        ac[:] += ns*gradlogit(beta, mo.data[i], UTI, cv)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        ac[:] += ns*gradlogit(UTI, mo.data[i], beta, precomputedValues = cv)
         nind += ns
     end
     ac[:] ./= -nind
@@ -125,7 +125,7 @@ function grads!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::AbstractArr
     for (index, i) in enumerate(sample)
         # ns = nsim(mo.data[i])
         cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
-        gll = gradlogit(beta, mo.data[i], UTI, cv)
+        gll = gradlogit(UTI, mo.data[i], beta, precomputedValues = cv)
         inplace ? ac[:, i] = gll : ac[:, index] = gll
     end
     ac[:, :] .*= -1
@@ -158,23 +158,24 @@ end
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
 function hess!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 2};
-        sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
+        sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     ac[:, :] .= zero(T)
     nind = 0
     for i in sample
         ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
-        ac[:, :] += ns*Hessianlogit(beta, mo.data[i], UTI, cv)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        ac[:, :] += ns*Hessianlogit(UTI, mo.data[i], beta, precomputedValues = cv)
         nind += ns
     end
     ac[:, :] ./= -nind
     return ac
 end
 function NLPModels.hess(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
-        sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
-    ac = Array{Float64, 2}(undef, dim(mo.data), dim(mo.data))
-    hess!(mo, beta, ac, sample = sample)
+        sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
+    n = dim(UTI, mo.data)
+    ac = zeros(T, n, n)
+    hess!(mo, beta, ac, sample = sample, obj_weight = obj_weight)
 end
 """
     Hdotv!(mo, beta, v, ac; sample)
@@ -187,21 +188,19 @@ end
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
 function NLPModels.hprod!(mo::LogitModel{UPD, D, L, UTI}, beta::AbstractVector{T}, v::AbstractVector, ac::Array{T, 1};
-        sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
+        sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
+    #@show size(ac)
+    #@show size(v)
+    #@show size(beta)
     ac[:] .= zero(T)
     nind = 0
     for i in sample
         ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
-        ac[:] += ns*Hessianlogit_dot_v(beta, mo.data[i], UTI, cv, v)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        ac[:] += ns*Hessianlogitdotv(UTI, mo.data[i], beta, v, precomputedValues = cv)
         nind += ns
-    end# NP = Int(length(obs.data)/obs.nalt) --> this is not used
-    # utilities = Array{Float64, 1}(undef, nalt(obs))
-    # for i in 1:nalt(obs)
-    #     utilities[i] = u.u(obs.data, beta, i)
-    # end
-    # return utilities
+    end
     ac[:] ./= -nind
     return ac
 end
@@ -216,9 +215,9 @@ end
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
 function NLPModels.hprod(mo::LogitModel{UPD, D, L, UTI}, beta::AbstractVector{T}, v::AbstractVector;
-        sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
-    ac = Array{T, 1}(undef, length(beta))
-    Hdotv!(mo, beta, v, ac, sample = sample)
+        sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
+    ac = zeros(T, length(beta))
+    hprod!(mo, beta, v, ac, sample = sample, obj_weight = obj_weight)
     return ac
 end
 
@@ -239,56 +238,12 @@ function bhhh!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 2};
     nind = 0
     for i in sample
         ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
-        gll = gradlogit(beta, mo.data[i], UTI, cv)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        
+        gll = gradlogit(UTI, mo.data[i], beta, precomputedValues = cv)
         ac[:, :] += ns*gll * gll'
         nind += ns
     end
     ac[:, :] ./= nind
     return ac
 end
-
-#=
-"""
-    BHHHdotv!(mo, beta, v, ac; sample)
-
-# Arguments
-- `beta::Vector{T}` is the parameter vector# NP = Int(length(obs.data)/obs.nalt) --> this is not used
-# utilities = Array{Float64, 1}(undef, nalt(obs))
-# for i in 1:nalt(obs)
-#     utilities[i] = u.u(obs.data, beta, i)
-# end
-# return utilities
-        sample = 1:length(mo.data)) where {T, UPD, D}
-    UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
-    # dim = length(beta)
-    ac[:] .= zero(T)
-    nind = 0
-    for i in sample
-        ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
-        gll = gradlogit(beta, mo.data[i], UTI, cv)
-        ac[:] += ns*dot(gll, v)*gll
-        nind += ns
-    end
-    ac[:] ./= nind
-    return ac
-end
-
-"""
-    BHHHdotv(mo, beta, v; sample)
-
-# Arguments
-- `beta::Vector{T}` is the parameter vector
-- `mo::LogitModel{UPD, D}` is the Logit modelwhere data is stored
-- `v::Vector`
-- `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
-"""
-function bhhhprod(beta::AbstractVector{T}, mo::LogitModel{UPD, D}, v::Vector;
-        sample = 1:length(mo.data)) where {T, UPD, D}
-    dim = length(beta)
-    ac = zeros(T, dim)
-    bhhhprod!(mo, beta, v, ac; sample = sample)
-    return ac
-end
-=#

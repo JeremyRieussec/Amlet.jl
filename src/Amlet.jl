@@ -15,7 +15,7 @@ Good luck!!
 """
 module Amlet
 
-using ForwardDiff, LinearAlgebra, RDST, Random, NLPModels#, Distributions
+using ForwardDiff, LinearAlgebra, RDST, Random, NLPModels, Distributions
 
 import Base.getindex
 import Base.iterate
@@ -30,9 +30,9 @@ export AbstractUtility, AbstractData, AbstractObs, computeUtilities,
         BHHH, BHHH!, BHHHdotv, BHHHdotv!
 =#
 
-include("Utilities/main.jl")
 include("Observation/main.jl")
 include("Data/main.jl")
+include("Utilities/main.jl")
 include("Utils/main.jl")
 include("Model/main.jl")
 end # module

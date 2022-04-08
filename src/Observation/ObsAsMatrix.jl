@@ -22,14 +22,6 @@ function nalt(obs::ObsAsMatrix)
     return size(obs.data, 1)
 end
 
-"""
-    computeUtilities(x::Vector, obs::ObsAsMatrix, u::LogitUtility)
-
-Computes utility value for every alternative in a Logit context -> returns an array.
-"""
-function computeUtilities(x::Vector, obs::ObsAsMatrix, u::AbstractLogitUtility)
-    return [u.u(obs.data, x, i) for i in 1:nalt(obs)]
-end
 #=
 """
     computeUtilities(x::Vector, obs::ObsAsMatrix, u::MixedLogitUtility, gamma::Vector)

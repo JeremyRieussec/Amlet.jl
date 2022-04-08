@@ -1,19 +1,20 @@
-mutable struct MixedLogitModel{U, D <: AbstractData} <: AmletModel{U, D}
-    u::AbstractUtility
+const Rbase = 100
+struct MixedLogitModel{D, L, UTI} <: AmletModel{NotUpdatable, D}
     data::D
     seeds::Array{Array{Int, 1}, 1}
-    R::Int
-    function MixedLogitModel(u::MixedLogitUtility, data::D, rng::MRG32k3a, R = 100) where {D <: AbstractData}
+    meta::NLPModelMeta{Float64, Vector{Float64}}
+    counters::Counters
+    function MixedLogitModel(::Type{UTI}, data::D, rng::MRG32k3a = MRG32k3a()) where {D <: AbstractData, L, UTI <: AbstractMixedLogitUtility{L}}
+        state0 = get_state(rng)
         seeds = Array{Int, 1}[]
         for _ in 1:length(data)
             push!(seeds, copy(rng.Bg))
             next_substream!(rng)
         end
-
-        return new{NotUpdatable, D}(u, data, seeds, R)
-    end
-    function MixedLogitModel(u::MixedLogitUtility, data::D, seed0::Array{Int, 1}, R = 100) where {D <: AbstractData}
-        rng = MRG32k3a(seed0)
-        return MixedLogit{NotUpdatable, D}(u, data, rng0, R)
+        n = dim(UTI, data)
+        meta = NLPModelMeta(n)
+        counters = Counters()
+        #println("model defined")
+        return new{D, L, UTI}(data, seeds, meta, counters)
     end
 end
