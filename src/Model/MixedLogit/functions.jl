@@ -28,7 +28,7 @@ function NLPModels.grad(mo::MixedLogitModel, theta::Vector{T};
         n = length(theta)
         ac = Array{T, 1}(undef, n)
         gradll!(mo, theta, ac, sample = sample, R = R) #the minus is done in grad!
-    return ac
+    return -ac
 end
 function grads!(mo::MixedLogitModel, theta::Vector{T}, ac::Matrix{T};
         sample = 1:length(mo.data), inplace::Bool = true, R::Int = Rbase)::Matrix{T} where T
@@ -36,7 +36,7 @@ function grads!(mo::MixedLogitModel, theta::Vector{T}, ac::Matrix{T};
         gradlls!(mo, theta, ac, sample = sample, R = R)
         ac[sample, :] .*= -1
     else
-        actmp = Array{T, 2}(undef, length(theta), length(sample))
+        actmp = zeros(T, length(theta), length(sample))
         gradlls!(mo, theta, actmp, sample = sample, R = R)
         for (index, i) in enumerate(sample)
             ac[:, i] = -actmp[:, index]
@@ -46,7 +46,7 @@ function grads!(mo::MixedLogitModel, theta::Vector{T}, ac::Matrix{T};
 end
 function grads(mo::MixedLogitModel, theta::Vector{T};
         sample = 1:length(mo.data), R::Int = Rbase)::Matrix{T} where T
-    ac = Array{T, 2}(undef, length(theta), length(sample))
+    ac = zeros(T, length(theta), length(sample))
     gradlls!(mo, theta, ac, sample = sample, R = R) #the minus is done in grads!
     return ac
 end
@@ -61,9 +61,9 @@ end
 function NLPModels.hess(mo::MixedLogitModel, theta::Vector{T};
         sample = 1:length(mo.data), obj_weight::Float64 = 1.0, R::Int = Rbase)::Matrix{T} where T
     tmp = length(theta)
-    ac = Array{T, 2}(undef, tmp, tmp)
+    ac = zeros(T, tmp, tmp)
     Hll!(mo, theta, ac, sample = sample, R = R)#the minus is done in hess!
-    return ac
+    return -ac
 end
 
 

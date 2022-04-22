@@ -31,7 +31,9 @@ end
 """
 function gradlogit(::Type{UTI}, obs::AbstractObs, beta::AbstractVector{T};
         precomputedValues::AbstractVector{T} = computePrecomputedVal(UTI, obs, beta))::Vector{T} where {T, UTI}
-    g = grad(UTI, obs, beta, choice(obs))
+    n = length(beta)
+    g = Array{T, 1}(undef, n)
+    g[:] = grad(UTI, obs, beta, choice(obs))
     for k in 1:length(precomputedValues)
         g[:] -= precomputedValues[k] * grad(UTI, obs, beta, k)
 

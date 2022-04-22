@@ -247,3 +247,13 @@ function bhhh!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 2};
     ac[:, :] ./= nind
     return ac
 end
+
+
+function getchoice(mo::LogitModel{U, D, L, UTI}, beta::Vector; sample = 1:length(mo.data)) where {U, D, L, UTI}
+    choices = [argmax(computeUtilities(UTI, mo.data[i], beta)) for i in sample]
+end
+function ratiorightchoice(mo::LogitModel{U, D, L, UTI}, beta::Vector; sample = 1:length(mo.data)) where {U, D, L, UTI}
+    choicesmodel = getchoice(mo, beta; sample = sample)
+    truechoice = choice.(mo.data)
+    return count(iszero, choicesmodel - truechoice)
+end

@@ -1,27 +1,19 @@
-
-function squareit(s::Vector{T}) where T
-    return s*s'
-end
-
-function computePrecomputedVal(::Type{UTI}, obs::AbstractObs, theta::Vector, gamma::Vector) where {UTI <: AbstractMixedLogitUtility}
+function computePrecomputedVal(::Type{UTI}, obs::AbstractObs, theta::Vector, gamma) where {UTI <: AbstractMixedLogitUtility}
     uti = computeUtilities(UTI, obs, theta, gamma)
-    #@show uti
     uti .-= maximum(uti)
     map!(exp, uti , uti)
     s = sum(uti)
-    #@show uti / s
     return uti / s
     
 end
 
 
 function L(::Type{UTI}, obs::AbstractObs, theta::Vector, 
-        gamma::Vector; pv::Vector = computePrecomputedVal(UTI, obs, theta, gamma)) where {UTI <: AbstractMixedLogitUtility}
-    #@show pv
+        gamma; pv::Vector = computePrecomputedVal(UTI, obs, theta, gamma)) where {UTI <: AbstractMixedLogitUtility}
     return pv[choice(obs)]
 end
 function gradL(::Type{UTI}, obs::AbstractObs, theta::Vector{T}, 
-        gamma::Vector; pv::Vector = computePrecomputedVal(UTI, obs, theta, gamma)) where {T, UTI <: AbstractMixedLogitUtility}
+        gamma; pv::Vector = computePrecomputedVal(UTI, obs, theta, gamma)) where {T, UTI <: AbstractMixedLogitUtility}
     ch = choice(obs)
     s = sum(pv)
     g = pv[ch] * s * grad(UTI, obs, theta, gamma, ch)
@@ -31,7 +23,7 @@ function gradL(::Type{UTI}, obs::AbstractObs, theta::Vector{T},
     g
 end
 function HL(::Type{UTI}, obs::AbstractObs, theta::Vector{T}, 
-            gamma::Vector; pv::Vector = computePrecomputedVal(UTI, obs, theta, gamma)) where {T, isLin, UTI <: AbstractMixedLogitUtility{isLin}}
+            gamma; pv::Vector = computePrecomputedVal(UTI, obs, theta, gamma)) where {T, isLin, UTI <: AbstractMixedLogitUtility{isLin}}
     
     nalt = length(pv)
     dim = length(theta)
@@ -83,27 +75,51 @@ function HSP(::Type{UTI}, obs::AbstractObs, theta::Vector{T}, rng::AbstractRNG; 
     ac[:, :] ./= R
     return ac
 end
-
+function funcandgradSP(::Type{UTI}, obs::AbstractObs, theta::Vector{T}, rng::AbstractRNG; R::Int = Rbase) where {T, UTI <: AbstractMixedLogitUtility}
+    dim = length(theta)
+    funcac = zero(T)
+    gradac = zeros(T, dim)
+    reset_substream!(rng)
+    for r in 1:R
+        n = gammaDim(UTI, obs)
+        gamma = getgamma(UTI, rng, n)
+        funcac += L(UTI, obs, theta, gamma)
+        gradac[:] += gradL(UTI, obs, theta, gamma)
+    end
+    funcac = funcac/R
+    gradac[:] ./= R
+    return funcac, gradac
+end
+function computeallSP(::Type{UTI}, obs::AbstractObs, theta::Vector{T}, rng::AbstractRNG; R::Int = Rbase) where {T, UTI <: AbstractMixedLogitUtility}
+    dim = length(theta)
+    funcac = zero(T)
+    gradac = zeros(T, dim)
+    hessac = zeros(T, dim, dim)
+    reset_substream!(rng)
+    for r in 1:R
+        n = gammaDim(UTI, obs)
+        gamma = getgamma(UTI, rng, n)
+        funcac += L(UTI, obs, theta, gamma)
+        gradac[:] += gradL(UTI, obs, theta, gamma)
+        hessac[:, :] += HL(UTI, obs, theta, gamma)
+    end
+    funcac = funcac/R
+    gradac[:] ./= R
+    hessac[:, :] ./= R
+    return funcac, gradac, hessac
+end
 
 
 function lsp(::Type{UTI}, obs::AbstractObs, theta::Vector, rng::AbstractRNG; R::Int = Rbase) where {UTI <: AbstractMixedLogitUtility}
     s = SP(UTI, obs, theta, rng, R = R)
-
-    #s, gs, HS = computeallsp(UTI, obs, theta, rng, R = R, grad = false, hess = false)
     return log(s)
 end
 function gradlsp(::Type{UTI}, obs::AbstractObs, theta::Vector, rng::AbstractRNG; R::Int = Rbase) where {UTI <: AbstractMixedLogitUtility}
-    s = SP(UTI, obs, theta, rng, R = R)
-    gs = gradSP(UTI, obs, theta, rng, R = R)
-    #s, gs, HS = computeallsp(UTI, obs, theta, rng, R = R, grad = true, hess = false)
-    return (1/s)*gs
+    s, gs = funcandgradSP(UTI, obs, theta, rng, R = R)
+    return gs/s
 end
 function Hlsp(::Type{UTI}, obs::AbstractObs, theta::Vector, rng::AbstractRNG; R::Int = Rbase) where {UTI <: AbstractMixedLogitUtility}
-    s = SP(UTI, obs, theta, rng, R = R)
-    gs = gradSP(UTI, obs, theta, rng, R = R)
-    Hs = HSP(UTI, obs, theta, rng, R = R)
-
-    #s, gs, HS = computeallsp(UTI, obs, theta, rng, R = R, grad = true, hess = true)
+    s, gs, Hs = computeallSP(UTI, obs, theta, rng, R = R)
     return (s*Hs - gs*gs')/(s^2)
 end
 
@@ -126,6 +142,7 @@ function lls(mo::MixedLogitModel{D, L, UTI}, theta::Vector; sample = 1:length(mo
 end
 function gradll!(mo::MixedLogitModel{D, L, UTI}, theta::Vector, ac::Vector; sample = 1:length(mo.data), R::Int = Rbase) where {D, L, UTI}
     total = 0
+    ac[:] .= 0
     for i in sample
         obs = mo.data[i]
         n = nsim(obs)
@@ -144,6 +161,7 @@ function gradlls!(mo::MixedLogitModel{D, L, UTI}, theta::Vector, ac::Matrix; sam
 end
 function Hll!(mo::MixedLogitModel{D, L, UTI}, theta::Vector, ac::Matrix; sample = 1:length(mo.data), R::Int = Rbase) where {D, L, UTI}
     total = 0
+    ac[:, :] .= 0
     for i in sample
         obs = mo.data[i]
         n = nsim(obs)
@@ -153,17 +171,3 @@ function Hll!(mo::MixedLogitModel{D, L, UTI}, theta::Vector, ac::Matrix; sample 
     ac[:, :] ./= total
     return ac
 end
-
-#=
-    total = 0
-    for i in sample
-        obs = mo.data[i]
-        n = nsim(obs)
-        total += n
-        ac += n * Hlsp(UTI, mo.data[i], theta, MRG32k3a(mo.seeds[i]), R = R)
-    end
-    ac[:, :] ./= total
-    return ac
-end
-
-=#

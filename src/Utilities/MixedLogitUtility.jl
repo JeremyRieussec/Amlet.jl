@@ -1,32 +1,49 @@
 
 abstract type AbstractMixedLogitUtility{L} <: AbstractUtility{L} end
-
-abstract type AbstractLinearParametricMixedLogitUtility{Distro, f} <: AbstractMixedLogitUtility{Linear} end
-const ALPMLU{Distro, f} = AbstractLinearParametricMixedLogitUtility{Distro, f}
-function u(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma::Vector, i::Int) where {Distro, f, TYPEU <: ALPMLU{Distro, f}}
-    #@show f
-    beta = f(theta, gamma)
-    xi = explanatory(obs, i)
-    return dot(xi, beta)
+function computeUtilities(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma) where {TYPEU <: AbstractMixedLogitUtility}
+    return [u(TYPEU, obs, theta, gamma, i) for i in 1:nalt(obs)]
 end
-function NLPModels.grad(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma::Vector, i::Int) where {Distro, f, TYPEU <: ALPMLU{Distro, f}}
-    xi = @view x[access(length(beta), i)]
-    #language abuse, actually Jac
-    return grad(f, theta, gamma)' * xi
+function NLPModels.grad(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma, i::Int) where {TYPEU <: AbstractMixedLogitUtility}
+    return ForwardDiff.gradient(t -> u(TYPEU, obs, t, gamma, i), theta)
 end
-function NLPModels.hess(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector{T}, gamma::Vector, i::Int) where {Distro, f, T, TYPEU <: ALPMLU{Distro, f}}
+function NLPModels.hess(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma, i::Int) where {TYPEU <: AbstractMixedLogitUtility{Linear}}
     @warn "Hessian of linear utility called"
     lt = length(theta)
     return zeros(Float64, lt, lt)
+end
+function NLPModels.hess(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma, i::Int) where {TYPEU <: AbstractMixedLogitUtility{NotLinear}}
+    return ForwardDiff.hessian(t -> u(TYPEU, obs, t, gamma, i), theta)
+end
+
+
+abstract type AbstractLinearParametricMixedLogitUtility{Distro, f} <: AbstractMixedLogitUtility{Linear} end
+const ALPMLU{Distro, f} = AbstractLinearParametricMixedLogitUtility{Distro, f}
+function linearutilityinmixedlogit(obs::AbstractObs, beta::Vector,i::Int)
+    xi = explanatory(obs, i)
+    return dot(xi, beta)
+end
+function u(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma, i::Int) where {Distro, f, TYPEU <: ALPMLU{Distro, f}}
+    #@show f
+    beta = f(theta, gamma)
+    linearutilityinmixedlogit(obs, beta, i)
+end
+function NLPModels.hess(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector{T}, gamma, i::Int) where {Distro, f, T, TYPEU <: ALPMLU{Distro, f}}
+    @warn "Hessian of linear utility called"
+    lt = length(theta)
+    return zeros(Float64, lt, lt)
+end
+function computeUtilities(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma) where {Distro, f, L, TYPEU <: ALPMLU{Distro, f}}
+    beta = f(theta, gamma)
+    return [linearutilityinmixedlogit(obs, beta, i) for i in 1:nalt(obs)]
 end
 function getgamma(::Type{TYPEU}, rng::AbstractRNG, n::Int) where {Distro, f, TYPEU <: ALPMLU{Distro, f}}
     d = Distro(n)
     return rand(rng, d)
 end
-function computeUtilities(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma::Vector) where {Distro, f, TYPEU <: ALPMLU{Distro, f}}
-    beta = f(theta, gamma)
-    return [dot(explanatory(obs, i), beta) for i in 1:nalt(obs)]
-end
+
+
+
+
 module ModuleNormalTasteUtility
 using LinearAlgebra, Distributions, Random
 function fdiag(theta::AbstractVector, gamma::Vector)
@@ -35,7 +52,7 @@ function fdiag(theta::AbstractVector, gamma::Vector)
     sig = @view theta[n+1:end]
     return mu + (sig .* gamma)
 end
-function utilitygraddiagnormal(xi::AbstractVector, theta::Vector, gamma::AbstractVector)
+function utilitygraddiagnormal(xi::AbstractVector, theta::Vector, gamma::Vector)
     return [xi; xi.*gamma]
 end
 function fuppertriangular(theta::Vector, gamma::Vector)
