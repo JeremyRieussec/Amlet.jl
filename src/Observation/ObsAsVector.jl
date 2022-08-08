@@ -7,7 +7,7 @@ choice made by the observation are the first ones.
 - `nalt::Int` : number of alternatives faced by individual.
 - `nsim::Int` : number of similar individuals in this configuration.
 """
-struct ObsAsVector{V} <: AbstractObs
+struct ObsAsVector{V} <: AbstractObs{V}
     data::V
     nalt::Int
     nsim::Int

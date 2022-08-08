@@ -10,7 +10,7 @@ Function to compute the averaged negative log-likelihood of the Logit model over
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 - `update::Bool = false` is for use of storage Engine.
 """
-function NLPModels.obj(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
+function PM.obj(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
         sample = 1:length(mo.data), update::Bool = false) where {T, UPD, D, L, UTI}
     update && update!(mo.se, beta, sample, mo)
     ac = zero(T)
@@ -79,7 +79,7 @@ end
 - `ac::Array` is the accumulator vector to modify in place
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function NLPModels.grad!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 1};
+function PM.grad!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 1};
         sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     ac[:] .= zero(T)
@@ -102,10 +102,10 @@ end
 - `mo::LogitModel{UPD, D}` is the Logit modelwhere data is stored
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function NLPModels.grad(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
+function PM.grad(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
         sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
         ac = Array{T, 1}(undef, length(beta))
-        NLPModels.grad!(mo, beta, ac, sample = sample)
+        PM.grad!(mo, beta, ac, sample = sample)
         return ac
 end
 
@@ -171,7 +171,7 @@ function hess!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 2};
     ac[:, :] ./= -nind
     return ac
 end
-function NLPModels.hess(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
+function PM.hess(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
         sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
     n = dim(UTI, mo.data)
     ac = zeros(T, n, n)
@@ -187,7 +187,7 @@ end
 - `ac::Array{T, 1}` is the accumulator vector to modify in place
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function NLPModels.hprod!(mo::LogitModel{UPD, D, L, UTI}, beta::AbstractVector{T}, v::AbstractVector, ac::Array{T, 1};
+function PM.hprod!(mo::LogitModel{UPD, D, L, UTI}, beta::AbstractVector{T}, v::AbstractVector, ac::Array{T, 1};
         sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     #@show size(ac)
@@ -214,7 +214,7 @@ end
 - `v::AbstractVector`
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function NLPModels.hprod(mo::LogitModel{UPD, D, L, UTI}, beta::AbstractVector{T}, v::AbstractVector;
+function PM.hprod(mo::LogitModel{UPD, D, L, UTI}, beta::AbstractVector{T}, v::AbstractVector;
         sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
     ac = zeros(T, length(beta))
     hprod!(mo, beta, v, ac, sample = sample, obj_weight = obj_weight)

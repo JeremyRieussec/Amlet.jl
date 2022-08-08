@@ -1,42 +1,41 @@
 
-abstract type AbstractMixedLogitUtility{L} <: AbstractUtility{L} end
-function computeUtilities(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma) where {TYPEU <: AbstractMixedLogitUtility}
+abstract type AbstractMixedLogitUtility{L, GT} <: AbstractUtility{L} end
+function computeUtilities(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma::GT) where {L, GT, TYPEU <: AbstractMixedLogitUtility{L, GT}}
     return [u(TYPEU, obs, theta, gamma, i) for i in 1:nalt(obs)]
 end
-function NLPModels.grad(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma, i::Int) where {TYPEU <: AbstractMixedLogitUtility}
+function PM.grad(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma::GT, i::Int) where {L, GT, TYPEU <: AbstractMixedLogitUtility{L, GT}}
     return ForwardDiff.gradient(t -> u(TYPEU, obs, t, gamma, i), theta)
 end
-function NLPModels.hess(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma, i::Int) where {TYPEU <: AbstractMixedLogitUtility{Linear}}
+function PM.hess(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma::GT, i::Int) where {L, GT, TYPEU <: AbstractMixedLogitUtility{L, GT}}
     @warn "Hessian of linear utility called"
     lt = length(theta)
     return zeros(Float64, lt, lt)
 end
-function NLPModels.hess(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma, i::Int) where {TYPEU <: AbstractMixedLogitUtility{NotLinear}}
+function PM.hess(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma::GT, i::Int) where {GT, TYPEU <: AbstractMixedLogitUtility{NotLinear, GT}}
     return ForwardDiff.hessian(t -> u(TYPEU, obs, t, gamma, i), theta)
 end
 
 
-abstract type AbstractLinearParametricMixedLogitUtility{Distro, f} <: AbstractMixedLogitUtility{Linear} end
-const ALPMLU{Distro, f} = AbstractLinearParametricMixedLogitUtility{Distro, f}
-function linearutilityinmixedlogit(obs::AbstractObs, beta::Vector,i::Int)
+abstract type AbstractLinearParametricMixedLogitUtility{Distro, f, GT} <: AbstractMixedLogitUtility{Linear, GT} end
+const ALPMLU{Distro, f, GT} = AbstractLinearParametricMixedLogitUtility{Distro, f, GT}
+function linearutilityinmixedlogit(obs::AbstractObs, beta::Vector, i::Int)
     xi = explanatory(obs, i)
     return dot(xi, beta)
 end
-function u(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma, i::Int) where {Distro, f, TYPEU <: ALPMLU{Distro, f}}
-    #@show f
+function u(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma::GT, i::Int) where {Distro, f, GT, TYPEU <: ALPMLU{Distro, f, GT}}
     beta = f(theta, gamma)
     linearutilityinmixedlogit(obs, beta, i)
 end
-function NLPModels.hess(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector{T}, gamma, i::Int) where {Distro, f, T, TYPEU <: ALPMLU{Distro, f}}
+function PM.hess(::Type{TYPEU}, obs::AbstractObs, theta::GT, gamma::GT, i::Int) where {Distro, f, T, GT, TYPEU <: ALPMLU{Distro, f, GT}}
     @warn "Hessian of linear utility called"
     lt = length(theta)
     return zeros(Float64, lt, lt)
 end
-function computeUtilities(::Type{TYPEU}, obs::AbstractObs, theta::AbstractVector, gamma) where {Distro, f, L, TYPEU <: ALPMLU{Distro, f}}
-    beta = f(theta, gamma)
+function computeUtilities(::Type{TYPEU}, obs::AbstractObs, theta::GT, gamma::GT) where {Distro, f, GT, TYPEU <: ALPMLU{Distro, f, GT}}
+    beta = f(theta, gamma::GT)
     return [linearutilityinmixedlogit(obs, beta, i) for i in 1:nalt(obs)]
 end
-function getgamma(::Type{TYPEU}, rng::AbstractRNG, n::Int) where {Distro, f, TYPEU <: ALPMLU{Distro, f}}
+function getgamma(::Type{TYPEU}, rng::AbstractRNG, n::Int)::GT where {Distro, f, GT, TYPEU <: ALPMLU{Distro, f, GT}}
     d = Distro(n)
     return rand(rng, d)
 end
@@ -46,16 +45,18 @@ end
 
 module ModuleNormalTasteUtility
 using LinearAlgebra, Distributions, Random
-function fdiag(theta::AbstractVector, gamma::Vector)
+
+const GT = Vector{Float64}
+function fdiag(theta::Vector{Float64}, gamma::GT)
     n = length(gamma)
     mu = @view theta[1:n]
     sig = @view theta[n+1:end]
     return mu + (sig .* gamma)
 end
-function utilitygraddiagnormal(xi::AbstractVector, theta::Vector, gamma::Vector)
+function utilitygraddiagnormal(xi::V, theta::Vector{Float64}, gamma::GT) where {V <: AbstractVector{Float64}}
     return [xi; xi.*gamma]
 end
-function fuppertriangular(theta::Vector, gamma::Vector)
+function fuppertriangular(theta::Vector{Float64}, gamma::GT)
     n = length(gamma)
     #this is a copy, SHOULD NOT be a view!!!
     mu = theta[1:n]
@@ -70,7 +71,7 @@ function fuppertriangular(theta::Vector, gamma::Vector)
     end
     return result
 end
-function utilitygraduppertrignormal(xi::AbstractVector, theta::Vector, gamma::AbstractVector)
+function utilitygraduppertrignormal(xi::V, theta::Vector{Float64}, gamma::GT) where {V <: AbstractVector{Float64}}
     g = similar(theta)
     n = length(gamma)
     g[1:n] = xi
@@ -88,28 +89,28 @@ end
 function mvnormal(n::Int)
     return MvNormal(zeros(n), Diagonal(ones(n)))
 end
-function getgammanormal(rng::AbstractRNG, n::Int)
+function getgammanormal(rng::AbstractRNG, n::Int)::GT
     return rand(rng, mvnormal(n))
 end
 
 end
 
-struct NormalDiagUtility <: ALPMLU{MvNormal, ModuleNormalTasteUtility.fdiag} end
+const NormalDiagUtility = ALPMLU{MvNormal, ModuleNormalTasteUtility.fdiag}
 const NDU = NormalDiagUtility
-function NLPModels.grad(::Type{NDU}, obs::AbstractObs, theta::AbstractVector, gamma::Vector, i::Int)
+function PM.grad(::Type{NDU}, obs::AbstractObs, theta::Vector, gamma::ModuleNormalTasteUtility.GT, i::Int)
     lb = div(length(theta), 2)
     #a view is slower here.
     xi = explanatory(obs, i)
     return ModuleNormalTasteUtility.utilitygraddiagnormal(xi, theta, gamma)
 end
-function NLPModels.hess(::Type{NDU}, obs::AbstractObs, theta::AbstractVector, gamma::Vector, i::Int)
+function PM.hess(::Type{NDU}, obs::AbstractObs, theta::Vector, gamma::ModuleNormalTasteUtility.GT, i::Int)
     lt = length(theta)
     return zeros(Float64, lt, lt)
 end
 
-struct NormalUpperTriangularUtility <: ALPMLU{MvNormal, ModuleNormalTasteUtility.fuppertriangular} end
+const NormalUpperTriangularUtility = ALPMLU{MvNormal, ModuleNormalTasteUtility.fuppertriangular}
 const NUTU = NormalUpperTriangularUtility
-function NLPModels.grad(::Type{NUTU}, obs::AbstractObs, theta::AbstractVector, gamma::Vector, i::Int)
+function PM.grad(::Type{NUTU}, obs::AbstractObs, theta::Vector, gamma::ModuleNormalTasteUtility.GT, i::Int)
     m = length(theta)
     n = div(round(Int, -3 + sqrt(9 + 8*m)), 2)
     xi = explanatory(obs, i)
@@ -117,7 +118,7 @@ function NLPModels.grad(::Type{NUTU}, obs::AbstractObs, theta::AbstractVector, g
 end
 
 
-function  getgamma(::Type{T}, rng::AbstractRNG, n::Int) where {T <: Union{NDU, NUTU}}
+function getgamma(::Type{T}, rng::AbstractRNG, n::Int) where {T <: Union{NDU, NUTU}}
     return ModuleNormalTasteUtility.getgammanormal(rng, n)
 end
 

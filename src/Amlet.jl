@@ -15,20 +15,14 @@ Good luck!!
 """
 module Amlet
 
-using ForwardDiff, LinearAlgebra, RDST, Random, NLPModels, Distributions
+using ForwardDiff, LinearAlgebra, RDST, Random, ENLPModels, Distributions
 
+const PM = ENLPModels
 import Base.getindex
 import Base.iterate
 import Base.length
 import Base.copy
 import Base.*
-#=
-export AbstractUtility, AbstractData, AbstractObs, computeUtilities,
-        F, Fs, Fs!,
-        grad, grad!, grads, grads!,
-        H, H!, Hdotv, Hdotv!,
-        BHHH, BHHH!, BHHHdotv, BHHHdotv!
-=#
 
 include("Observation/main.jl")
 include("Data/main.jl")

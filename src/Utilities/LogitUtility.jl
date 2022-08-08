@@ -6,10 +6,10 @@ struct StandardLogitUtility <: AbstractLogitUtility{Linear} end
 function u(::Type{StandardLogitUtility}, obs::AbstractObs, beta::AbstractVector, i::Int)
     return dot(explanatory(obs, i), beta)
 end
-function NLPModels.grad(::Type{StandardLogitUtility}, obs::AbstractObs, beta::AbstractVector, i::Int)
+function PM.grad(::Type{StandardLogitUtility}, obs::AbstractObs, beta::AbstractVector, i::Int)
     return explanatory(obs, i)
 end
-function NLPModels.hess(::Type{StandardLogitUtility}, obs::AbstractObs, beta::AbstractVector{T}, i::Int) where T
+function PM.hess(::Type{StandardLogitUtility}, obs::AbstractObs, beta::AbstractVector{T}, i::Int) where T
     @warn "Hessian of linear utility called"
     lb = length(beta)
     return zeros(T, lb, lb)

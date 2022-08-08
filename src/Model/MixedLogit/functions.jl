@@ -1,4 +1,4 @@
-function NLPModels.obj(mo::MixedLogitModel, theta::Vector{T};
+function PM.obj(mo::MixedLogitModel, theta::Vector{T};
         sample = 1:length(mo.data), R::Int = Rbase)::T where T
     return -ll(mo, theta, sample = sample, R = R)
 end
@@ -17,13 +17,13 @@ function objs(mo::MixedLogitModel, theta::Vector{T};
 end
 
 
-function NLPModels.grad!(mo::MixedLogitModel, theta::Vector{T}, ac::Array{T, 1};
+function PM.grad!(mo::MixedLogitModel, theta::Vector{T}, ac::Array{T, 1};
         sample = 1:length(mo.data), R::Int = Rbase)::Vector{T} where T
     gradll!(mo, theta, ac, sample = sample, R = R)
     ac[:] *= -1
     return ac
 end
-function NLPModels.grad(mo::MixedLogitModel, theta::Vector{T};
+function PM.grad(mo::MixedLogitModel, theta::Vector{T};
         sample = 1:length(mo.data), R::Int = Rbase) ::Vector{T} where T
         n = length(theta)
         ac = Array{T, 1}(undef, n)
@@ -58,7 +58,7 @@ function hess!(mo::MixedLogitModel, theta::Vector{T}, ac::Array{T, 2};
     ac[:, :] *= -1
     return ac
 end
-function NLPModels.hess(mo::MixedLogitModel, theta::Vector{T};
+function PM.hess(mo::MixedLogitModel, theta::Vector{T};
         sample = 1:length(mo.data), obj_weight::Float64 = 1.0, R::Int = Rbase)::Matrix{T} where T
     tmp = length(theta)
     ac = zeros(T, tmp, tmp)
@@ -67,12 +67,12 @@ function NLPModels.hess(mo::MixedLogitModel, theta::Vector{T};
 end
 
 
-function NLPModels.hprod!(mo::MixedLogitModel, theta::AbstractVector{T}, v::AbstractVector, ac::Array{T, 1};
+function PM.hprod!(mo::MixedLogitModel, theta::AbstractVector{T}, v::AbstractVector, ac::Array{T, 1};
         sample = 1:length(mo.data), obj_weight::Float64 = 1.0, R::Int = Rbase)::Vector{T} where T
     h = hess(mo, theta, sample = sample, R = R)
     ac[:] = -h*v
 end
-function NLPModels.hprod(mo::MixedLogitModel, theta::AbstractVector{T}, v::AbstractVector;
+function PM.hprod(mo::MixedLogitModel, theta::AbstractVector{T}, v::AbstractVector;
         sample = 1:length(mo.data), obj_weight::Float64 = 1.0, R::Int = Rbase)::Vector{T} where T
     ac = Array{T, 1}(undef, length(theta))
     return hprod!(mo, theta, v, ac, sample = sample, R = R)#the minus is done in hprod!

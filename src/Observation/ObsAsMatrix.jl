@@ -5,11 +5,11 @@
 - `data::Array{Float64, 2}` : represent data as a `Matrix` where each row represents a choice, the choice made by individual is assumed to be the first row.
 - `nsim::Int` : number of similar individuals
 """
-struct ObsAsMatrix <: AbstractObs
-    data::Array{Float64, 2}
+struct ObsAsMatrix{VT} <: AbstractObs{VT}
+    data::VT
     nsim::Int
-    function ObsAsMatrix(data::Array{Float64, 2}, nsim::Int = 1) where T
-        return new(data, nsim)
+    function ObsAsMatrix(data::VT, nsim::Int = 1) where {T, VT <: AbstractArray{T, 2}}
+        return new{VT}(data, nsim)
     end
 end
 
