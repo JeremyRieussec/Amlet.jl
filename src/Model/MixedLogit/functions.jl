@@ -30,7 +30,7 @@ function PM.grad(mo::MixedLogitModel, theta::Vector{T};
         gradll!(mo, theta, ac, sample = sample, R = R) #the minus is done in grad!
     return -ac
 end
-function grads!(mo::MixedLogitModel, theta::Vector{T}, ac::Matrix{T};
+function PM.grads!(mo::MixedLogitModel, theta::Vector{T}, ac::Matrix{T};
         sample = 1:length(mo.data), inplace::Bool = true, R::Int = Rbase)::Matrix{T} where T
     if !inplace
         gradlls!(mo, theta, ac, sample = sample, R = R)
@@ -44,7 +44,7 @@ function grads!(mo::MixedLogitModel, theta::Vector{T}, ac::Matrix{T};
     end
     return ac
 end
-function grads(mo::MixedLogitModel, theta::Vector{T};
+function PM.grads(mo::MixedLogitModel, theta::Vector{T};
         sample = 1:length(mo.data), R::Int = Rbase)::Matrix{T} where T
     ac = zeros(T, length(theta), length(sample))
     gradlls!(mo, theta, ac, sample = sample, R = R) #the minus is done in grads!

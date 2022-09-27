@@ -18,18 +18,18 @@ mutable struct LogitModel{U, D <: AbstractData, L, UTI <: AbstractLogitUtility{L
         n = dim(UTI, data)
         model.meta = NLPModelMeta(n)
         model.counters = Counters()
-        model.nobs = nobs(model)
+        model.nobs = nobs(data)
         return model
     end
     function LogitModel(data::D; T::Type = Float64, upd::Bool = false) where {D <: AbstractData}
         UTI = StandardLogitUtility
         L = Linear
         UPD = upd ? Updatable : NotUpdatable
-        model = upd ? new{UPD, D, L, UTI}(data, StorageEngine(data, T)) : new{UPD, D, L, UTI}(u, data)
+        model = upd ? new{UPD, D, L, UTI}(data, StorageEngine(data, T)) : new{UPD, D, L, UTI}(data)
         n = dim(UTI, data)
         model.meta = NLPModelMeta(n)
         model.counters = Counters()
-        model.nobs = nobs(model)
+        model.nobs = nobs(data)
         return model
     end
 end

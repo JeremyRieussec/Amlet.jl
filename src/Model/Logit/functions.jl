@@ -44,7 +44,7 @@ function PM.objs!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     for (index, i) in enumerate(sample)
         # ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
         ll = logit(UTI, mo.data[i], beta, precomputedValues = cv)
         inplace ? ac[i] = -ll : ac[index] = -ll
     end
@@ -63,7 +63,7 @@ Returns an array comtaining all values.
 - `mo::LogitModel{UPD, D}` is the Logit modelwhere data is stored
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function objs(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
+function PM.objs(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
         sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
     ac = Array{T, 1}(undef, length(sample))
     objs!(mo, beta, ac; sample = sample, inplace = false)
@@ -124,7 +124,7 @@ function PM.grads!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Abstract
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     for (index, i) in enumerate(sample)
         # ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
         gll = gradlogit(UTI, mo.data[i], beta, precomputedValues = cv)
         inplace ? ac[:, i] = gll : ac[:, index] = gll
     end
