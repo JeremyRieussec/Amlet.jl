@@ -5,11 +5,11 @@
 - `data::Array{Float64, 2}` : represent data as a `Matrix` where each row represents a choice, the choice made by individual is assumed to be the first row.
 - `nsim::Int` : number of similar individuals
 """
-struct ObsAsMatrix <: AbstractObs
-    data::Array{Float64, 2}
+struct ObsAsMatrix{VT} <: AbstractObs{VT}
+    data::VT
     nsim::Int
-    function ObsAsMatrix(data::Array{Float64, 2}, nsim::Int = 1) where T
-        return new(data, nsim)
+    function ObsAsMatrix(data::VT, nsim::Int = 1) where {T, VT <: AbstractArray{T, 2}}
+        return new{VT}(data, nsim)
     end
 end
 
@@ -22,15 +22,7 @@ function nalt(obs::ObsAsMatrix)
     return size(obs.data, 1)
 end
 
-"""
-    computeUtilities(x::Vector, obs::ObsAsMatrix, u::LogitUtility)
-
-Computes utility value for every alternative in a Logit context -> returns an array.
-"""
-function computeUtilities(x::Vector, obs::ObsAsMatrix, u::LogitUtility)
-    return [u.u(obs.data, x, i) for i in 1:nalt(obs)]
-end
-
+#=
 """
     computeUtilities(x::Vector, obs::ObsAsMatrix, u::MixedLogitUtility, gamma::Vector)
 
@@ -39,7 +31,7 @@ Computes utility value for every alternative in a MixedLogit context -> returns 
 function computeUtilities(x::Vector, obs::ObsAsMatrix, u::MixedLogitUtility, gamma::Vector)
     return [u.u(obs_i, x, gamma) for obs_i in eachrow(obs.data)]
 end
-
+=#
 """
     choice(obs::ObsAsMatrix)
 

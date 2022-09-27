@@ -31,12 +31,14 @@ Returns munber of individuals.
 function length(l::LinedObs)
     return size(l.data, 2)
 end
-
+function nobs(l::LinedObs)
+    return length(l)
+end
 function nalt(l::LinedObs)
     return l.nalt
 end
 
-function dim(l::LinedObs)
+function explanatorylength(l::LinedObs)
     n = size(l.data, 1)
     return div(n, l.nalt)
 end

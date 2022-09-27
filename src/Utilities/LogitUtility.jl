@@ -1,67 +1,42 @@
-"""
-    LogitUtility{L <: isLinear}
 
-# Fields
-- `u::Function` is the utility function for Logit model
-- `grad::Function` is the gradient function
-    - x::Any
-    - beta::AbstractVector
-    - i::Int
-- `H::Function` is Hessian matrix computation function
-    - x::Any
-    - beta::AbstractVector
-    - i::Int
-"""
-struct LogitUtility{L <: isLinear} <: AbstractUtility{L}
-    u::Function
-    grad::Function
-    H::Function
-    function LogitUtility(u::Function, L::Type = NotLinear)
-        function grad(x::Any, beta::AbstractVector, i::Int)
-            return ForwardDiff.gradient(t -> u(x, t, i), beta)
-        end
-        function H(x::Any, beta, i::Int)
-            return ForwardDiff.hessian(t -> u(x, t, i), beta)
-        end
-        return new{L}(u, grad, H)
-    end
-    function LogitUtility(u::Function, grad::Function, hes::Function, L::Type = NotLinear)
-        return new{L}(u, grad, hes)
-    end
+abstract type AbstractLogitUtility{L} <: AbstractUtility{L} end
+
+struct StandardLogitUtility <: AbstractLogitUtility{Linear} end
+
+function u(::Type{StandardLogitUtility}, obs::AbstractObs, beta::AbstractVector, i::Int)
+    return dot(explanatory(obs, i), beta)
+end
+function PM.grad(::Type{StandardLogitUtility}, obs::AbstractObs, beta::AbstractVector, i::Int)
+    return explanatory(obs, i)
+end
+function PM.hess(::Type{StandardLogitUtility}, obs::AbstractObs, beta::AbstractVector{T}, i::Int) where T
+    @warn "Hessian of linear utility called"
+    lb = length(beta)
+    return zeros(T, lb, lb)
+end
+function hessdotv(::Type{StandardLogitUtility}, obs::AbstractObs, beta::AbstractVector{T}, i::Int, v::Vector) where T
+    @warn "Hessian of linear utility called"
+    lb = length(beta)
+    return zeros(T, lb)
 end
 
 
 """
-Encapsulate code for utility, gradient and Hessian computation.
+    computeUtilities(x::Vector, obs::ObsAsVector, u::LogitUtility)
+
+Computes utility value for every alternative in a Logit context -> returns an array.
 """
-module LinearUtilityForLogitModelWithCodeWellEncapsulated
-
-using LinearAlgebra
-    #AbstractVector
-    function access(n::Int, m::Int)
-        return (m-1)*n+1:n*m
+function computeUtilities(::Type{UTI}, obs::ObsAsVector, beta::AbstractArray{T}) where {T, UTI <: AbstractLogitUtility}
+    n = nalt(obs)
+    ar = Array{T, 1}(undef, n)
+    #for some reason, faster than [u(UTI, obs, beta, i) for i in 1:nalt(obs)]???
+    for i in 1:n
+        ar[i] = dot(explanatory(obs, i), beta)
     end
-    function u(x::AbstractVector, beta::AbstractVector, i::Int)
-        return dot(x[access(length(beta), i)], beta)
-    end
-    function grad(x::AbstractVector, beta::AbstractVector, i::Int)
-        return x[access(length(beta), i)]
-    end
-    function H(x::AbstractVector, beta::AbstractVector{T}, i::Int) where T
-        return zeros(T, length(beta), length(beta))
-    end
-
-    #AbstractMatrix
-    function u(x::AbstractMatrix, beta::AbstractVector, i::Int)
-        return dot(beta, @view x[i, :])
-    end
-    function grad(x::AbstractMatrix, beta::AbstractVector, i::Int)
-        return x[i, :]
-    end
-    function H(x::AbstractMatrix, beta::AbstractVector{T}, i::Int) where T
-        return zeros(T, length(beta), length(beta)) 
-    end
+    return ar
 end
 
-LUFLMWCWE = LinearUtilityForLogitModelWithCodeWellEncapsulated
-LinUti = LogitUtility(LUFLMWCWE.u, LUFLMWCWE.grad, LUFLMWCWE.H, Linear)
+function dim(::Type{UTI}, s::AbstractData) where {UTI <: AbstractLogitUtility}
+    n = explanatorylength(s)
+    return n 
+end

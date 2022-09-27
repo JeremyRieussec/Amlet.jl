@@ -1,6 +1,6 @@
 
 """
-    F(beta, mo; sample , update)
+    obj(mo, beta; sample , update)
 
 Function to compute the averaged negative log-likelihood of the Logit model over a sampled population.
 
@@ -10,26 +10,23 @@ Function to compute the averaged negative log-likelihood of the Logit model over
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 - `update::Bool = false` is for use of storage Engine.
 """
-function Sofia.F(beta::Vector{T}, mo::LogitModel{UPD, D};
-        sample = 1:length(mo.data), update::Bool = false) where {T, UPD, D}
+function PM.obj(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
+        sample = 1:length(mo.data), update::Bool = false) where {T, UPD, D, L, UTI}
     update && update!(mo.se, beta, sample, mo)
     ac = zero(T)
     nind = 0
     UPD == Updatable && @assert ((mo.se.beta == beta) && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     for i in sample
         ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], mo.u) : @view mo.se.cv[:, i]
-        ac += ns*loglogit(beta, mo.data[i], mo.u, cv)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        ac += ns*logit(UTI, mo.data[i], beta, precomputedValues = cv)
         nind += ns
     end
     return -ac/nind
 end
 
-
-# Pourquoi avoir inplace = false ? Le ! ne signifie-t-il pas qu' on fait en place ?
-# Pour le stockage en accumulateur, on devrait avoir le negative log likelihood
 """
-    Fs!(beta, mo, ac; sample , inplace)
+    Fs!(mo, beta, ac; sample , inplace)
 
 Computation of the negative log-likelihoods for all individuals in the selected population.
 
@@ -42,20 +39,20 @@ Modifies the `ac` array in place.
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full
 - `inplace::Bool = false`
 """
-function Sofia.Fs!(beta::Vector{T}, mo::LogitModel{UPD, D}, ac::Array{T, 1};
-        sample = 1:length(mo.data), inplace::Bool = false) where {T, UPD, D}
+function PM.objs!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 1};
+        sample = 1:length(mo.data), inplace::Bool = false) where {T, UPD, D, L, UTI}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     for (index, i) in enumerate(sample)
         # ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], mo.u) : @view mo.se.cv[:, i]
-        ll = loglogit(beta, mo.data[i], mo.u, cv)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
+        ll = logit(UTI, mo.data[i], beta, precomputedValues = cv)
         inplace ? ac[i] = -ll : ac[index] = -ll
     end
     return ac
 end
 
 """
-    Fs(beta, mo; sample)
+    Fs(mo, beta; sample)
 
 Computation of the negative log-likelihoods for all individuals in the selected population.
 
@@ -66,15 +63,15 @@ Returns an array comtaining all values.
 - `mo::LogitModel{UPD, D}` is the Logit modelwhere data is stored
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function Sofia.Fs(beta::Vector{T}, mo::LogitModel{UPD, D};
-        sample = 1:length(mo.data)) where {T, UPD, D}
+function objs(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
+        sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
     ac = Array{T, 1}(undef, length(sample))
-    Fs!(beta, mo, ac; sample = sample, inplace = false)
+    objs!(mo, beta, ac; sample = sample, inplace = false)
     return ac
 end
 
 """
-    grad!(beta, mo, ac; sample)
+    grad!(mo, beta, ac; sample)
 
 # Arguments
 - `beta::Vector{T}` is the parameter vector
@@ -82,15 +79,15 @@ end
 - `ac::Array` is the accumulator vector to modify in place
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function Sofia.grad!(beta::Vector{T}, mo::LogitModel{UPD, D}, ac::Array{T, 1};
-        sample = 1:length(mo.data)) where {T, UPD, D}
+function PM.grad!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 1};
+        sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     ac[:] .= zero(T)
     nind = 0
     for i in sample
         ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], mo.u) : @view mo.se.cv[:, i]
-        ac[:] += ns*gradloglogit(beta, mo.data[i], mo.u, cv)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        ac[:] += ns*gradlogit(UTI, mo.data[i], beta, precomputedValues = cv)
         nind += ns
     end
     ac[:] ./= -nind
@@ -98,22 +95,22 @@ function Sofia.grad!(beta::Vector{T}, mo::LogitModel{UPD, D}, ac::Array{T, 1};
 end
 
 """
-    grad(beta, mo; sample)
+    grad(mo, beta; sample)
 
 # Arguments
 - `beta::Vector{T}` is the parameter vector
 - `mo::LogitModel{UPD, D}` is the Logit modelwhere data is stored
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function Sofia.grad(beta::Vector{T}, mo::LogitModel{UPD, D};
-        sample = 1:length(mo.data)) where {T, UPD, D}
+function PM.grad(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
+        sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
         ac = Array{T, 1}(undef, length(beta))
-        Sofia.grad!(beta, mo, ac, sample = sample)
+        PM.grad!(mo, beta, ac, sample = sample)
         return ac
 end
 
 """
-    grads!(beta, mo, ac; sample, inplace)
+    grads!(mo, beta, ac; sample, inplace)
 
 # Arguments
 - `beta::Vector{T}` is the parameter vector
@@ -122,13 +119,13 @@ end
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 - `inplace::Bool = true`
 """
-function Sofia.grads!(beta::Vector{T}, mo::LogitModel{UPD, D}, ac::AbstractArray{T, 2};
-        sample = 1:length(mo.data), inplace::Bool = false) where {T, UPD, D}
+function PM.grads!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::AbstractArray{T, 2};
+        sample = 1:length(mo.data), inplace::Bool = true) where {T, UPD, D, L, UTI}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     for (index, i) in enumerate(sample)
         # ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], mo.u) : @view mo.se.cv[:, i]
-        gll = gradloglogit(beta, mo.data[i], mo.u, cv)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
+        gll = gradlogit(UTI, mo.data[i], beta, precomputedValues = cv)
         inplace ? ac[:, i] = gll : ac[:, index] = gll
     end
     ac[:, :] .*= -1
@@ -136,23 +133,23 @@ function Sofia.grads!(beta::Vector{T}, mo::LogitModel{UPD, D}, ac::AbstractArray
 end
 
 """
-    grads!(beta, mo; sample)
+    grads!(mo, beta; sample)
 
 # Arguments
 - `beta::Vector{T}` is the parameter vector
 - `mo::LogitModel{UPD, D}` is the Logit modelwhere data is stored
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function Sofia.grads(beta::Vector{T}, mo::LogitModel{UPD, D};
-    sample = 1:length(mo.data)) where {T, UPD, D}
+function PM.grads(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
+    sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
     dim = length(beta)
     ac = Array{T, 2}(undef, dim, length(sample))
-    grads!(beta, mo, ac, sample = sample, inplace = false)
+    grads!(mo, beta, ac, sample = sample, inplace = false)
     return ac
 end
 
 """
-    H!(beta, mo, ac; sample)
+    H!(mo, beta, ac; sample)
 
 # Arguments
 - `beta::Vector{T}` is the parameter vector
@@ -160,23 +157,28 @@ end
 - `ac::Array{T, 2}` is the accumulator vector to modify in place
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function Sofia.H!(beta::Vector{T}, mo::LogitModel{UPD, D}, ac::Array{T, 2};
-        sample = 1:length(mo.data)) where {T, UPD, D}
+function PM.hess!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 2};
+        sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     ac[:, :] .= zero(T)
     nind = 0
     for i in sample
         ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], mo.u) : @view mo.se.cv[:, i]
-        ac[:, :] += ns*Hessianloglogit(beta, mo.data[i], mo.u, cv)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        ac[:, :] += ns*Hessianlogit(UTI, mo.data[i], beta, precomputedValues = cv)
         nind += ns
     end
     ac[:, :] ./= -nind
     return ac
 end
-
+function PM.hess(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T};
+        sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
+    n = dim(UTI, mo.data)
+    ac = zeros(T, n, n)
+    hess!(mo, beta, ac, sample = sample, obj_weight = obj_weight)
+end
 """
-    Hdotv!(beta, mo, v, ac; sample)
+    Hdotv!(mo, beta, v, ac; sample)
 
 # Arguments
 - `beta::Vector{T}` is the parameter vector
@@ -185,15 +187,18 @@ end
 - `ac::Array{T, 1}` is the accumulator vector to modify in place
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function Sofia.Hdotv!(beta::AbstractVector{T}, mo::LogitModel{UPD, D}, v::AbstractVector, ac::Array{T, 1};
-        sample = 1:length(mo.data)) where {T, UPD, D}
+function PM.hprod!(mo::LogitModel{UPD, D, L, UTI}, beta::AbstractVector{T}, v::AbstractVector, ac::Array{T, 1};
+        sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
+    #@show size(ac)
+    #@show size(v)
+    #@show size(beta)
     ac[:] .= zero(T)
     nind = 0
     for i in sample
         ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], mo.u) : @view mo.se.cv[:, i]
-        ac[:] += ns*Hessianloglogit_dot_v(beta, mo.data[i], mo.u, cv, v)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        ac[:] += ns*Hessianlogitdotv(UTI, mo.data[i], beta, v, precomputedValues = cv)
         nind += ns
     end
     ac[:] ./= -nind
@@ -201,7 +206,7 @@ function Sofia.Hdotv!(beta::AbstractVector{T}, mo::LogitModel{UPD, D}, v::Abstra
 end
 
 """
-    Hdotv(beta, mo, v, ac; sample)
+    Hdotv(mo, beta, v, ac; sample)
 
 # Arguments
 - `beta::Vector{T}` is the parameter vector
@@ -209,15 +214,15 @@ end
 - `v::AbstractVector`
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function Sofia.Hdotv(beta::AbstractVector{T}, mo::LogitModel{UPD, D}, v::AbstractVector;
-        sample = 1:length(mo.data)) where {T, UPD, D}
-    ac = Array{T, 1}(undef, length(beta))
-    Hdotv!(beta, mo, v, ac, sample = sample)
+function PM.hprod(mo::LogitModel{UPD, D, L, UTI}, beta::AbstractVector{T}, v::AbstractVector;
+        sample = 1:length(mo.data), obj_weight::Float64 = 1.0) where {T, UPD, D, L, UTI}
+    ac = zeros(T, length(beta))
+    hprod!(mo, beta, v, ac, sample = sample, obj_weight = obj_weight)
     return ac
 end
 
 """
-    BHHH!(beta, mo, ac; sample)
+    BHHH!(mo, beta, ac; sample)
 
 # Arguments
 - `beta::Vector{T}` is the parameter vector
@@ -225,16 +230,17 @@ end
 - `ac::Array{T, 2}` is the accumulator vector to modify in place
 - `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
 """
-function Sofia.BHHH!(beta::Vector{T}, mo::LogitModel{UPD, D}, ac::Array{T, 2};
-        sample = 1:length(mo.data)) where {T, UPD, D}
+function PM.bhhh!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 2};
+        sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     # dim = length(beta)
     ac[:, :] .= zero(T)
     nind = 0
     for i in sample
         ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], mo.u) : @view mo.se.cv[:, i]
-        gll = gradloglogit(beta, mo.data[i], mo.u, cv)
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        
+        gll = gradlogit(UTI, mo.data[i], beta, precomputedValues = cv)
         ac[:, :] += ns*gll * gll'
         nind += ns
     end
@@ -243,46 +249,11 @@ function Sofia.BHHH!(beta::Vector{T}, mo::LogitModel{UPD, D}, ac::Array{T, 2};
 end
 
 
-"""
-    BHHHdotv!(beta, mo, v, ac; sample)
-
-# Arguments
-- `beta::Vector{T}` is the parameter vector
-- `mo::LogitModel{UPD, D}` is the Logit modelwhere data is stored
-- `ac::Array{T, 1}` is the accumulator vector to modify in place
-- `v::Vector`
-- `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
-"""
-function Sofia.BHHHdotv!(beta::Vector{T}, mo::LogitModel{UPD, D}, v::Vector, ac::Array{T, 1};
-        sample = 1:length(mo.data)) where {T, UPD, D}
-    UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
-    # dim = length(beta)
-    ac[:] .= zero(T)
-    nind = 0
-    for i in sample
-        ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], mo.u) : @view mo.se.cv[:, i]
-        gll = gradloglogit(beta, mo.data[i], mo.u, cv)
-        ac[:] += ns*dot(gll, v)*gll
-        nind += ns
-    end
-    ac[:] ./= nind
-    return ac
+function getchoice(mo::LogitModel{U, D, L, UTI}, beta::Vector; sample = 1:length(mo.data)) where {U, D, L, UTI}
+    choices = [argmax(computeUtilities(UTI, mo.data[i], beta)) for i in sample]
 end
-
-"""
-    BHHHdotv(beta, mo, v; sample)
-
-# Arguments
-- `beta::Vector{T}` is the parameter vector
-- `mo::LogitModel{UPD, D}` is the Logit modelwhere data is stored
-- `v::Vector`
-- `sample = 1:length(mo.data)` is the sampled population used for computation, by default full.
-"""
-function Sofia.BHHHdotv(beta::AbstractVector{T}, mo::LogitModel{UPD, D}, v::Vector;
-        sample = 1:length(mo.data)) where {T, UPD, D}
-    dim = length(beta)
-    ac = zeros(T, dim)
-    BHHHdotv!(beta, mo, v, ac; sample = sample)
-    return ac
+function ratiorightchoice(mo::LogitModel{U, D, L, UTI}, beta::Vector; sample = 1:length(mo.data)) where {U, D, L, UTI}
+    choicesmodel = getchoice(mo, beta; sample = sample)
+    truechoice = choice.(mo.data)
+    return count(iszero, choicesmodel - truechoice)
 end

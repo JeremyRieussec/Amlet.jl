@@ -31,7 +31,9 @@ Returns number of individuals.
 function length(l::MatrixObs)
     return size(l.data, 1)
 end
-
+function nobs(l::MatrixObs)
+    return length(l.data, 2)
+end
 """
     nalt(l::MatrixObs)
 
