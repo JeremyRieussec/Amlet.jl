@@ -19,3 +19,6 @@ struct MixedLogitModel{D, L, UTI} <: AmletModel{NotUpdatable, D}
         return new{D, L, UTI}(data, seeds, meta, counters, nobs(data))
     end
 end
+function ENLPModels.nobs(mlm::MixedLogitModel)
+    return mlm.nobs
+end

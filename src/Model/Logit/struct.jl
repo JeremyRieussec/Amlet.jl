@@ -33,7 +33,7 @@ mutable struct LogitModel{U, D <: AbstractData, L, UTI <: AbstractLogitUtility{L
         return model
     end
 end
-function nobs(lm::LogitModel)
+function ENLPModels.nobs(lm::LogitModel)
     return nobs(lm.data)
 end
 function dim(lm::LogitModel{U, D, L, UTI}) where {U, D, L, UTI}
