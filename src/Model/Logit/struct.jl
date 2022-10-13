@@ -25,7 +25,7 @@ mutable struct LogitModel{U, D <: AbstractData, L, UTI <: AbstractLogitUtility{L
         UTI = StandardLogitUtility
         L = Linear
         UPD = upd ? Updatable : NotUpdatable
-        model = upd ? new{UPD, D, L, UTI}(data, StorageEngine(data, T)) : new{UPD, D, L, UTI}(u, data)
+        model = upd ? new{UPD, D, L, UTI}(data, StorageEngine(data, T)) : new{UPD, D, L, UTI}(data)
         n = dim(UTI, data)
         model.meta = NLPModelMeta(n)
         model.counters = Counters()
@@ -33,9 +33,11 @@ mutable struct LogitModel{U, D <: AbstractData, L, UTI <: AbstractLogitUtility{L
         return model
     end
 end
+
 function ENLPModels.nobs(lm::LogitModel)
     return nobs(lm.data)
 end
+
 function dim(lm::LogitModel{U, D, L, UTI}) where {U, D, L, UTI}
     return dim(UTI, lm.data)
 end

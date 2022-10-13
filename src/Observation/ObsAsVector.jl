@@ -66,15 +66,18 @@ Returns number of similar individuals with these observations.
 function nsim(obs::ObsAsVector)
     return obs.nsim
 end
+
 function access(n::Int, m::Int)
     return (m-1)*n+1:n*m
 end
+
 function explanatory(obs::ObsAsVector, i::Int)
     data = obs.data
     n = dim(obs)
     @view data[access(n, i)]
 
 end
+
 function explanatorylength(l::ObsAsVector)
     n = length(l.data)
     return div(n, l.nalt)

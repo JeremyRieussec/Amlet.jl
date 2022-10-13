@@ -31,8 +31,9 @@ Returns number of individuals.
 function length(l::MatrixObs)
     return size(l.data, 1)
 end
+
 function nobs(l::MatrixObs)
-    return length(l.data, 2)
+    return length(l.data)
 end
 """
     nalt(l::MatrixObs)
@@ -43,12 +44,15 @@ function nalt(l::MatrixObs)
     return l.nalt
 end
 
+function explanatorylength(l::MatrixObs)
+    return size(l.data[1], 2)
+end
+
 @doc raw"""
     dim(l::MatrixObs)
 
 Returns the dimension of the attribute vectors, i.e. ``p``.
 """
 function dim(l::MatrixObs)
-    n = size(l.data, 1)
-    return div(n, l.nalt)
+    return size(l.data[1], 2)
 end

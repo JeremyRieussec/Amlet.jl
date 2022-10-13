@@ -42,3 +42,13 @@ function explanatorylength(l::LinedObs)
     n = size(l.data, 1)
     return div(n, l.nalt)
 end
+
+@doc raw"""
+    dim(l::MatrixObs)
+
+Returns the dimension of the attribute vectors, i.e. ``p``.
+"""
+function dim(l::LinedObs)
+    n = size(l.data, 1)
+    return div(n, l.nalt)
+end

@@ -44,7 +44,7 @@ function objs!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 1};
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     for (index, i) in enumerate(sample)
         # ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
         ll = logit(UTI, mo.data[i], beta, precomputedValues = cv)
         inplace ? ac[i] = -ll : ac[index] = -ll
     end
@@ -124,7 +124,7 @@ function grads!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::AbstractArr
     UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
     for (index, i) in enumerate(sample)
         # ns = nsim(mo.data[i])
-        cv = (UPD == NotUpdatable) ? computePrecomputedVal(beta, mo.data[i], UTI) : @view mo.se.cv[:, i]
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
         gll = gradlogit(UTI, mo.data[i], beta, precomputedValues = cv)
         inplace ? ac[:, i] = gll : ac[:, index] = gll
     end
@@ -251,7 +251,9 @@ end
 
 function getchoice(mo::LogitModel{U, D, L, UTI}, beta::Vector; sample = 1:length(mo.data)) where {U, D, L, UTI}
     choices = [argmax(computeUtilities(UTI, mo.data[i], beta)) for i in sample]
+    return choices
 end
+
 function ratiorightchoice(mo::LogitModel{U, D, L, UTI}, beta::Vector; sample = 1:length(mo.data)) where {U, D, L, UTI}
     choicesmodel = getchoice(mo, beta; sample = sample)
     truechoice = choice.(mo.data)
