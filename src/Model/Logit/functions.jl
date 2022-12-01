@@ -247,8 +247,35 @@ function PM.bhhh!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 
     ac[:, :] ./= nind
     return ac
 end
-
-
+function PM.bhhh(mo::LogitModel, beta::Vector{T};
+        sample = 1:length(mo.data)) where T
+    ac = Array{T, 2}(undef, length(beta), length(beta))
+    bhhh!(mo, beta, ac, sample = sample)
+    return ac
+end
+function PM.bhhhprod!(mo::LogitModel{UPD, D, L, UTI}, beta::Vector{T}, ac::Array{T, 1}, v::Vector{T};
+        sample = 1:length(mo.data)) where {T, UPD, D, L, UTI}
+    UPD == Updatable && @assert (mo.se.beta == beta && all(mo.se.updatedInd[sample])) "Storage Engine not updated"
+    # dim = length(beta)
+    ac[:] .= zero(T)
+    nind = 0
+    for i in sample
+        ns = nsim(mo.data[i])
+        cv = (UPD == NotUpdatable) ? computePrecomputedVal(UTI, mo.data[i], beta) : @view mo.se.cv[:, i]
+        
+        gll = gradlogit(UTI, mo.data[i], beta, precomputedValues = cv)
+        ac[:] += ns * dot(gll, v) * gll
+        nind += ns
+    end
+    ac[:] ./= nind
+    return ac
+end
+function PM.bhhhprod(mo::LogitModel, beta::Vector{T}, v::Vector{T};
+        sample = 1:length(mo.data)) where T
+    ac = Array{T, 1}(undef, length(beta))
+    bhhhprod!(mo, beta, ac, v, sample = sample)
+    return ac
+end
 function getchoice(mo::LogitModel{U, D, L, UTI}, beta::Vector; sample = 1:length(mo.data)) where {U, D, L, UTI}
     choices = [argmax(computeUtilities(UTI, mo.data[i], beta)) for i in sample]
 end

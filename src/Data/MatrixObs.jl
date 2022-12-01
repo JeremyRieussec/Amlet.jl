@@ -28,10 +28,10 @@ end
 
 Returns number of individuals.
 """
-function length(l::MatrixObs)
+function Base.length(l::MatrixObs)
     return size(l.data, 1)
 end
-function nobs(l::MatrixObs)
+function ENLPModels.nobs(l::MatrixObs)
     return length(l.data, 2)
 end
 """

@@ -1,7 +1,7 @@
 name = "Amlet"
 uuid = "c2ffc8e4-82bc-438e-80c0-8adc2aad9fd7"
 authors = ["JLChartrand <jl_chartrand@hotmail.com>"]
-version = "0.1.0"
+version = "1.0.0"
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"

@@ -3,13 +3,13 @@ function PM.obj(mo::MixedLogitModel, theta::Vector{T};
     return -ll(mo, theta, sample = sample, R = R)
 end
 
-function objs!(mo::MixedLogitModel, theta::Vector{T}, ac::Array{T, 1};
+function PM.objs!(mo::MixedLogitModel, theta::Vector{T}, ac::Array{T, 1};
         sample = 1:length(mo.data), inplace::Bool = false, R::Int = Rbase)::Vector{T} where T
     vals = -lls(mo, theta, sample = sample, R = R)
     inplace ? (ac[sample] = vals) : (ac[:] = vals)
     return ac
 end
-function objs(mo::MixedLogitModel, theta::Vector{T};
+function PM.objs(mo::MixedLogitModel, theta::Vector{T};
         sample = 1:length(mo.data), R::Int = Rbase)::Vector{T} where T
     ac = Array{T, 1}(undef, length(sample))
     objs!(mo, theta, ac, sample = sample, inplace = false, R = R) #the minus is done in objs!
@@ -52,7 +52,7 @@ function PM.grads(mo::MixedLogitModel, theta::Vector{T};
 end
 
 
-function hess!(mo::MixedLogitModel, theta::Vector{T}, ac::Array{T, 2};
+function PM.hess!(mo::MixedLogitModel, theta::Vector{T}, ac::Array{T, 2};
         sample = 1:length(mo.data), obj_weight::Float64 = 1.0, R::Int = Rbase)::Matrix{T} where T
     Hll!(mo, theta, ac, sample = sample, R = R)
     ac[:, :] *= -1
