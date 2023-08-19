@@ -1,0 +1,9 @@
+name = "docs"
+uuid = "fe3bbbc5-879c-492d-9ca5-252ee24834ef"
+authors = ["JeremyRieussec <jeremy.rieussec@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+ENLPModels = "40a49f02-5bca-4b67-9829-87357810e07c"
+RDST = "dc077566-edc2-11e8-0ce0-7d758bb9a5d1"
