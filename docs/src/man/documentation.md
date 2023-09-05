@@ -1,0 +1,6 @@
+# Documentation
+
+```@docs
+domath
+greet
+```

@@ -29,4 +29,17 @@ include("Data/main.jl")
 include("Utilities/main.jl")
 include("Utils/main.jl")
 include("Model/main.jl")
+
+"""Greetings!"""
+greet() = println("Hello World!")
+
+"""
+    domath(x)
+
+Returns double the number `x` plus `1`.
+"""
+domath(x::Real) = 2*x + 1.0
+
+export greet, domath
+
 end # module
