@@ -11,6 +11,6 @@ makedocs(
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
 deploydocs(
-    repo = "github.com/JeremyRieussec/Amlet.jl";
-    push_preview = true
+    repo = "github.com/JeremyRieussec/Amlet.jl",
+    devbranch = "dev",
 )
