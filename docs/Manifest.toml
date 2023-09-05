@@ -55,7 +55,7 @@ version = "1.6.0"
 deps = ["NLPModels"]
 git-tree-sha1 = "fb9edd52c1947d67498e859d0e38ecd53df2c23b"
 repo-rev = "main"
-repo-url = "https://github.com/JLChartrand/ENLPModels.jl.git"
+repo-url = "https://github.com/JLChartrand/ENLPModels.jl"
 uuid = "40a49f02-5bca-4b67-9829-87357810e07c"
 version = "0.1.0"
 
@@ -191,7 +191,7 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 deps = ["Random", "Suppressor"]
 git-tree-sha1 = "58b423d3e2a269e9039d9b7b5845602bfa6ae841"
 repo-rev = "master"
-repo-url = "https://github.com/JLChartrand/RDST.jl.git"
+repo-url = "https://github.com/JLChartrand/RDST.jl"
 uuid = "dc077566-edc2-11e8-0ce0-7d758bb9a5d1"
 version = "0.1.0"
 
